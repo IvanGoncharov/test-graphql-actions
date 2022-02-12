@@ -1,0 +1,33 @@
+name: GitHubActionsBotHello
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  hello-message:
+    if: github.event_name == 'issues' && github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add comment on PR
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const sender = context.payload.sender.login;
+
+            github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body:
+                `Hi @${sender}, I'm @github-actions bot happy to help you with this PR 👋\n\n` +
+                process.env.SUPPORTED_COMMANDS,
+            })
+        env:
+          SUPPORTED_COMMANDS: |
+            <details>
+            <summary> Supported commands </summary>
+
+            Please post this commands in separate comments and only one per comment:
+            * `@github-actions publish-pr-on-npm` - Build package from this PR and publish it on NPM
+            </details>

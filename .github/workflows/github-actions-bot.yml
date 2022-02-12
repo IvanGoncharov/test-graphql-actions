@@ -1,0 +1,104 @@
+name: GitHubActionsBot
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  hello-message:
+    if: github.event_name == 'issues' && github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body: 'Help message',
+            });
+
+  accept-cmd:
+    if: |
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '@github-actions ')
+    runs-on: ubuntu-latest
+    outputs:
+      cmd: ${{ steps.parse-cmd.outputs.cmd }}
+      replyMessage: ${{ steps.parse-cmd.outputs.replyMessage }}
+    steps:
+      - uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.reactions.createForIssueComment({
+              ...context.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes',
+            });
+
+      - id: parse-cmd
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const cmd = context.payload.comment.body.replace('@github-actions', '').trim();
+            core.setOutput('cmd', cmd);
+
+  cmd-publish-pr-on-npm:
+    needs: [accept-cmd]
+    if: needs.accept-cmd.outputs.cmd == 'publish-pr-on-npm'
+    runs-on: ubuntu-latest
+    outputs:
+      replyMessage: ${{ steps.test.outputs.replyMessage }}
+    steps:
+      - id: test
+        uses: actions/github-script@v5
+        with:
+          script: |
+            core.setOutput('replyMessage', 'Lorem ipsum');
+
+  respond-to-cmd:
+    needs:
+      - cmd-publish-pr-on-npm
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v5
+        with:
+          script: |
+            const { issue, comment, sender } = context.payload;
+            const needs = JSON.parse(process.env.NEEDS);
+
+            let replyMessage;
+            let allSkipped = true;
+            for (const { result, outputs } of Object.values(needs)) {
+              allSkipped = allSkipped && result === 'skipped';
+              replyMessage = replyMessage || outputs.replyMessage;
+            }
+
+            if (!replyMessage) {
+              replyMessage = allSkipped
+                ? 'Unknown command, please check help message at the top of PR.',
+                : `Something went wrong, please check logs here:\n${process.env.RUN_URL}`;
+            }
+
+            const quoteRequest = comment.body
+              .split('\n')
+              .map((line) => '> ' + line)
+              .join('\n');
+
+            github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: issue.number,
+              body: quoteRequest + `\n\n@${sender.login} ` + replyMessage,
+            });
+
+            // `github.rest` doesn't have this method :( so use graphql instead
+            github.graphql(`
+              mutation ($subjectId: ID!) {
+                minimizeComment(input: { subjectId: $subjectId, classifier: RESOLVED})
+                  { __typename }
+              }
+            `, { subjectId: comment.node_id });
+        env:
+          RUN_URL: ${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}}
+          NEEDS: ${{ toJSON(needs) }}
