@@ -1,12 +1,27 @@
 name: GitHubActionsBot
 on:
+  pull_request_target:
+    types:
+      - opened
   issue_comment:
     types:
       - created
 
+env:
+  COMMANDS_JSON: |
+    {
+      "publish-pr-on-npm": "Build package from this PR and publish it on NPM"
+    }
 jobs:
+  dump-github:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo $GITHUB
+        env:
+          GITHUB: ${{ toJSON(github) }}
+
   hello-message:
-    if: github.event_name == 'issues' && github.event.issue.pull_request
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v5
@@ -20,6 +35,7 @@ jobs:
 
   accept-cmd:
     if: |
+      github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '@github-actions ')
     runs-on: ubuntu-latest
@@ -40,8 +56,16 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
+            const commands = JSON.parse(process.env.COMMANDS_JSON);
             const cmd = context.payload.comment.body.replace('@github-actions', '').trim();
-            core.setOutput('cmd', cmd);
+            if (cmd in commands) {
+              core.setOutput('cmd', cmd);
+            } else {
+              core.setOutput(
+                'replyMessage',
+                `Unknown command "${cmd}", please check help message at the top of PR.`,
+              );
+            }
 
   cmd-publish-pr-on-npm:
     needs: [accept-cmd]
@@ -58,8 +82,9 @@ jobs:
 
   respond-to-cmd:
     needs:
+      - accept-cmd
       - cmd-publish-pr-on-npm
-    if: always()
+    if: needs.accept-cmd.result != 'skipped' && always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v5
@@ -69,17 +94,12 @@ jobs:
             const needs = JSON.parse(process.env.NEEDS);
 
             let replyMessage;
-            let allSkipped = true;
             for (const { result, outputs } of Object.values(needs)) {
-              allSkipped = allSkipped && result === 'skipped';
               replyMessage = replyMessage || outputs.replyMessage;
             }
 
-            if (!replyMessage) {
-              replyMessage = allSkipped
-                ? 'Unknown command, please check help message at the top of PR.',
-                : `Something went wrong, please check logs here:\n${process.env.RUN_URL}`;
-            }
+            replyMessage = replyMessage ||
+              `Something went wrong, please check logs here:\n${process.env.RUN_URL}`;
 
             const quoteRequest = comment.body
               .split('\n')
