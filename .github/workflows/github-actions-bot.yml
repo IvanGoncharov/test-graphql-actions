@@ -1,6 +1,6 @@
 name: GitHubActionsBot
 on:
-  pull_request_target:
+  issues:
     types:
       - opened
   issue_comment:
@@ -13,15 +13,8 @@ env:
       "publish-pr-on-npm": "Build package from this PR and publish it on NPM"
     }
 jobs:
-  dump-github:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo $GITHUB
-        env:
-          GITHUB: ${{ toJSON(github) }}
-
   hello-message:
-    if: github.event_name == 'pull_request_target'
+    if: github.event_name == 'issues' && github.event.issue.pull_request
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v5
