@@ -11,7 +11,6 @@ import type { ASTValidationContext } from '../ValidationContext.ts';
  *
  * See https://spec.graphql.org/draft/#sec-Executable-Definitions
  */
-
 export function ExecutableDefinitionsRule(
   context: ASTValidationContext,
 ): ASTVisitor {
@@ -25,14 +24,12 @@ export function ExecutableDefinitionsRule(
               ? 'schema'
               : '"' + definition.name.value + '"';
           context.reportError(
-            new GraphQLError(
-              `The ${defName} definition is not executable.`,
-              definition,
-            ),
+            new GraphQLError(`The ${defName} definition is not executable.`, {
+              nodes: definition,
+            }),
           );
         }
       }
-
       return false;
     },
   };

@@ -3,9 +3,7 @@ export { getLocation } from './location.ts';
 export type { SourceLocation } from './location.ts';
 export { printLocation, printSourceLocation } from './printLocation.ts';
 export { Kind } from './kinds.ts';
-export type { KindEnum } from './kinds.ts';
 export { TokenKind } from './tokenKind.ts';
-export type { TokenKindEnum } from './tokenKind.ts';
 export { Lexer } from './lexer.ts';
 export { parse, parseValue, parseConstValue, parseType } from './parser.ts';
 export type { ParseOptions } from './parser.ts';
@@ -13,7 +11,6 @@ export { print } from './printer.ts';
 export {
   visit,
   visitInParallel,
-  getVisitFn,
   getEnterLeaveForKind,
   BREAK,
 } from './visitor.ts';
@@ -21,7 +18,8 @@ export type { ASTVisitor, ASTVisitFn, ASTVisitorKeyMap } from './visitor.ts';
 export { Location, Token, OperationTypeNode } from './ast.ts';
 export type {
   ASTNode,
-  ASTKindToNode, // Each kind of AST node
+  ASTKindToNode,
+  // Each kind of AST node
   NameNode,
   DocumentNode,
   DefinitionNode,
@@ -94,4 +92,3 @@ export {
   isTypeExtensionNode,
 } from './predicates.ts';
 export { DirectiveLocation } from './directiveLocation.ts';
-export type { DirectiveLocationEnum } from './directiveLocation.ts';

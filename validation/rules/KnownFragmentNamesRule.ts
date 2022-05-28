@@ -9,16 +9,16 @@ import type { ValidationContext } from '../ValidationContext.ts';
  *
  * See https://spec.graphql.org/draft/#sec-Fragment-spread-target-defined
  */
-
 export function KnownFragmentNamesRule(context: ValidationContext): ASTVisitor {
   return {
     FragmentSpread(node) {
       const fragmentName = node.name.value;
       const fragment = context.getFragment(fragmentName);
-
       if (!fragment) {
         context.reportError(
-          new GraphQLError(`Unknown fragment "${fragmentName}".`, node.name),
+          new GraphQLError(`Unknown fragment "${fragmentName}".`, {
+            nodes: node.name,
+          }),
         );
       }
     },

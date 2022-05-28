@@ -1,4 +1,3 @@
-import { devAssert } from './jsutils/devAssert.ts';
 import { isPromise } from './jsutils/isPromise.ts';
 import type { Maybe } from './jsutils/Maybe.ts';
 import type { PromiseOrValue } from './jsutils/PromiseOrValue.ts';
@@ -52,7 +51,6 @@ import { execute } from './execution/execute.ts';
  *    If not provided, the default type resolver is used (which looks for a
  *    `__typename` field or alternatively calls the `isTypeOf` method).
  */
-
 export interface GraphQLArgs {
   schema: GraphQLSchema;
   source: string | Source;
@@ -75,24 +73,15 @@ export function graphql(args: GraphQLArgs): Promise<ExecutionResult> {
  * However, it guarantees to complete synchronously (or throw an error) assuming
  * that all field resolvers are also synchronous.
  */
-
 export function graphqlSync(args: GraphQLArgs): ExecutionResult {
-  const result = graphqlImpl(args); // Assert that the execution was synchronous.
-
+  const result = graphqlImpl(args);
+  // Assert that the execution was synchronous.
   if (isPromise(result)) {
     throw new Error('GraphQL execution failed to complete synchronously.');
   }
-
   return result;
 }
-
 function graphqlImpl(args: GraphQLArgs): PromiseOrValue<ExecutionResult> {
-  // Temporary for v15 to v16 migration. Remove in v17
-  arguments.length < 2 ||
-    devAssert(
-      false,
-      'graphql@16 dropped long-deprecated support for positional arguments, please pass an object instead.',
-    );
   const {
     schema,
     source,
@@ -102,34 +91,25 @@ function graphqlImpl(args: GraphQLArgs): PromiseOrValue<ExecutionResult> {
     operationName,
     fieldResolver,
     typeResolver,
-  } = args; // Validate Schema
-
+  } = args;
+  // Validate Schema
   const schemaValidationErrors = validateSchema(schema);
-
   if (schemaValidationErrors.length > 0) {
-    return {
-      errors: schemaValidationErrors,
-    };
-  } // Parse
-
+    return { errors: schemaValidationErrors };
+  }
+  // Parse
   let document;
-
   try {
     document = parse(source);
   } catch (syntaxError) {
-    return {
-      errors: [syntaxError],
-    };
-  } // Validate
-
+    return { errors: [syntaxError] };
+  }
+  // Validate
   const validationErrors = validate(schema, document);
-
   if (validationErrors.length > 0) {
-    return {
-      errors: validationErrors,
-    };
-  } // Execute
-
+    return { errors: validationErrors };
+  }
+  // Execute
   return execute({
     schema,
     document,
