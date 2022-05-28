@@ -1,23 +1,9 @@
-'use strict';
-
-Object.defineProperty(exports, '__esModule', {
-  value: true,
-});
-exports.DirectiveLocation = void 0;
-
 /**
  * The set of allowed directive location values.
  */
-let DirectiveLocation;
-/**
- * The enum type representing the directive location values.
- *
- * @deprecated Please use `DirectiveLocation`. Will be remove in v17.
- */
-
-exports.DirectiveLocation = DirectiveLocation;
-
+export var DirectiveLocation;
 (function (DirectiveLocation) {
+  /** Request Definitions */
   DirectiveLocation['QUERY'] = 'QUERY';
   DirectiveLocation['MUTATION'] = 'MUTATION';
   DirectiveLocation['SUBSCRIPTION'] = 'SUBSCRIPTION';
@@ -26,6 +12,7 @@ exports.DirectiveLocation = DirectiveLocation;
   DirectiveLocation['FRAGMENT_SPREAD'] = 'FRAGMENT_SPREAD';
   DirectiveLocation['INLINE_FRAGMENT'] = 'INLINE_FRAGMENT';
   DirectiveLocation['VARIABLE_DEFINITION'] = 'VARIABLE_DEFINITION';
+  /** Type System Definitions */
   DirectiveLocation['SCHEMA'] = 'SCHEMA';
   DirectiveLocation['SCALAR'] = 'SCALAR';
   DirectiveLocation['OBJECT'] = 'OBJECT';
@@ -37,4 +24,4 @@ exports.DirectiveLocation = DirectiveLocation;
   DirectiveLocation['ENUM_VALUE'] = 'ENUM_VALUE';
   DirectiveLocation['INPUT_OBJECT'] = 'INPUT_OBJECT';
   DirectiveLocation['INPUT_FIELD_DEFINITION'] = 'INPUT_FIELD_DEFINITION';
-})(DirectiveLocation || (exports.DirectiveLocation = DirectiveLocation = {}));
+})(DirectiveLocation || (DirectiveLocation = {}));

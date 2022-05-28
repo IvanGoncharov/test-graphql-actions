@@ -1,14 +1,5 @@
-'use strict';
-
-Object.defineProperty(exports, '__esModule', {
-  value: true,
-});
-exports.UniqueArgumentNamesRule = UniqueArgumentNamesRule;
-
-var _groupBy = require('../../jsutils/groupBy.js');
-
-var _GraphQLError = require('../../error/GraphQLError.js');
-
+import { groupBy } from '../../jsutils/groupBy.js';
+import { GraphQLError } from '../../error/GraphQLError.js';
 /**
  * Unique argument names
  *
@@ -17,34 +8,22 @@ var _GraphQLError = require('../../error/GraphQLError.js');
  *
  * See https://spec.graphql.org/draft/#sec-Argument-Names
  */
-function UniqueArgumentNamesRule(context) {
+export function UniqueArgumentNamesRule(context) {
   return {
     Field: checkArgUniqueness,
     Directive: checkArgUniqueness,
   };
-
   function checkArgUniqueness(parentNode) {
-    var _parentNode$arguments;
-
     // FIXME: https://github.com/graphql/graphql-js/issues/2203
-
     /* c8 ignore next */
-    const argumentNodes =
-      (_parentNode$arguments = parentNode.arguments) !== null &&
-      _parentNode$arguments !== void 0
-        ? _parentNode$arguments
-        : [];
-    const seenArgs = (0, _groupBy.groupBy)(
-      argumentNodes,
-      (arg) => arg.name.value,
-    );
-
+    const argumentNodes = parentNode.arguments ?? [];
+    const seenArgs = groupBy(argumentNodes, (arg) => arg.name.value);
     for (const [argName, argNodes] of seenArgs) {
       if (argNodes.length > 1) {
         context.reportError(
-          new _GraphQLError.GraphQLError(
+          new GraphQLError(
             `There can be only one argument named "${argName}".`,
-            argNodes.map((node) => node.name),
+            { nodes: argNodes.map((node) => node.name) },
           ),
         );
       }

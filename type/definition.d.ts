@@ -28,22 +28,9 @@ import type { GraphQLSchema } from './schema';
  * These are all of the possible kinds of types.
  */
 export declare type GraphQLType =
-  | GraphQLScalarType
-  | GraphQLObjectType
-  | GraphQLInterfaceType
-  | GraphQLUnionType
-  | GraphQLEnumType
-  | GraphQLInputObjectType
+  | GraphQLNamedType
   | GraphQLList<GraphQLType>
-  | GraphQLNonNull<
-      | GraphQLScalarType
-      | GraphQLObjectType
-      | GraphQLInterfaceType
-      | GraphQLUnionType
-      | GraphQLEnumType
-      | GraphQLInputObjectType
-      | GraphQLList<GraphQLType>
-    >;
+  | GraphQLNonNull<GraphQLNullableType>;
 export declare function isType(type: unknown): type is GraphQLType;
 export declare function assertType(type: unknown): GraphQLType;
 /**
@@ -81,50 +68,36 @@ export declare function isListType(
 export declare function assertListType(type: unknown): GraphQLList<GraphQLType>;
 export declare function isNonNullType(
   type: GraphQLInputType,
-): type is GraphQLNonNull<GraphQLInputType>;
+): type is GraphQLNonNull<GraphQLNullableInputType>;
 export declare function isNonNullType(
   type: GraphQLOutputType,
-): type is GraphQLNonNull<GraphQLOutputType>;
+): type is GraphQLNonNull<GraphQLNullableOutputType>;
 export declare function isNonNullType(
   type: unknown,
-): type is GraphQLNonNull<GraphQLType>;
+): type is GraphQLNonNull<GraphQLNullableType>;
 export declare function assertNonNullType(
   type: unknown,
 ): GraphQLNonNull<GraphQLType>;
 /**
  * These types may be used as input types for arguments and directives.
  */
+export declare type GraphQLNullableInputType =
+  | GraphQLNamedInputType
+  | GraphQLList<GraphQLInputType>;
 export declare type GraphQLInputType =
-  | GraphQLScalarType
-  | GraphQLEnumType
-  | GraphQLInputObjectType
-  | GraphQLList<GraphQLInputType>
-  | GraphQLNonNull<
-      | GraphQLScalarType
-      | GraphQLEnumType
-      | GraphQLInputObjectType
-      | GraphQLList<GraphQLInputType>
-    >;
+  | GraphQLNullableInputType
+  | GraphQLNonNull<GraphQLNullableInputType>;
 export declare function isInputType(type: unknown): type is GraphQLInputType;
 export declare function assertInputType(type: unknown): GraphQLInputType;
 /**
  * These types may be used as output types as the result of fields.
  */
+export declare type GraphQLNullableOutputType =
+  | GraphQLNamedOutputType
+  | GraphQLList<GraphQLOutputType>;
 export declare type GraphQLOutputType =
-  | GraphQLScalarType
-  | GraphQLObjectType
-  | GraphQLInterfaceType
-  | GraphQLUnionType
-  | GraphQLEnumType
-  | GraphQLList<GraphQLOutputType>
-  | GraphQLNonNull<
-      | GraphQLScalarType
-      | GraphQLObjectType
-      | GraphQLInterfaceType
-      | GraphQLUnionType
-      | GraphQLEnumType
-      | GraphQLList<GraphQLOutputType>
-    >;
+  | GraphQLNullableOutputType
+  | GraphQLNonNull<GraphQLNullableOutputType>;
 export declare function isOutputType(type: unknown): type is GraphQLOutputType;
 export declare function assertOutputType(type: unknown): GraphQLOutputType;
 /**
@@ -224,12 +197,7 @@ export declare function assertWrappingType(type: unknown): GraphQLWrappingType;
  * These types can all accept null as a value.
  */
 export declare type GraphQLNullableType =
-  | GraphQLScalarType
-  | GraphQLObjectType
-  | GraphQLInterfaceType
-  | GraphQLUnionType
-  | GraphQLEnumType
-  | GraphQLInputObjectType
+  | GraphQLNamedType
   | GraphQLList<GraphQLType>;
 export declare function isNullableType(
   type: unknown,
@@ -302,10 +270,9 @@ export interface GraphQLScalarTypeExtensions {
  * Scalars (or Enums) and are defined with a name and a series of functions
  * used to parse input from ast or variables and to ensure validity.
  *
- * If a type's serialize function does not return a value (i.e. it returns
- * `undefined`) then an error will be raised and a `null` value will be returned
- * in the response. If the serialize function returns `null`, then no error will
- * be included in the response.
+ * If a type's serialize function returns `null` or does not return a value
+ * (i.e. it returns `undefined`) then an error will be raised and a `null`
+ * value will be returned in the response. It is always better to validate
  *
  * Example:
  *
@@ -313,9 +280,16 @@ export interface GraphQLScalarTypeExtensions {
  * const OddType = new GraphQLScalarType({
  *   name: 'Odd',
  *   serialize(value) {
- *     if (value % 2 === 1) {
- *       return value;
+ *     if (!Number.isFinite(value)) {
+ *       throw new Error(
+ *         `Scalar "Odd" cannot represent "${value}" since it is not a finite number.`,
+ *       );
  *     }
+ *
+ *     if (value % 2 === 0) {
+ *       throw new Error(`Scalar "Odd" cannot represent "${value}" since it is even.`);
+ *     }
+ *     return value;
  *   }
  * });
  * ```

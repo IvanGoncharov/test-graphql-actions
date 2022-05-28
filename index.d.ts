@@ -127,6 +127,8 @@ export type {
   GraphQLAbstractType,
   GraphQLWrappingType,
   GraphQLNullableType,
+  GraphQLNullableInputType,
+  GraphQLNullableOutputType,
   GraphQLNamedType,
   GraphQLNamedInputType,
   GraphQLNamedOutputType,
@@ -192,7 +194,6 @@ export {
   print,
   visit,
   visitInParallel,
-  getVisitFn,
   getEnterLeaveForKind,
   BREAK,
   Kind,
@@ -211,9 +212,6 @@ export {
 export type {
   ParseOptions,
   SourceLocation,
-  TokenKindEnum,
-  KindEnum,
-  DirectiveLocationEnum,
   ASTVisitor,
   ASTVisitFn,
   ASTVisitorKeyMap,
@@ -295,7 +293,6 @@ export type {
   ExecutionResult,
   FormattedExecutionResult,
 } from './execution/index';
-export type { SubscriptionArgs } from './subscription/index';
 export {
   validate,
   ValidationContext,
@@ -338,21 +335,15 @@ export {
   NoSchemaIntrospectionCustomRule,
 } from './validation/index';
 export type { ValidationRule } from './validation/index';
-export {
-  GraphQLError,
-  syntaxError,
-  locatedError,
-  printError,
-  formatError,
-} from './error/index';
+export { GraphQLError, syntaxError, locatedError } from './error/index';
 export type {
+  GraphQLErrorOptions,
   GraphQLFormattedError,
   GraphQLErrorExtensions,
 } from './error/index';
 export {
   getIntrospectionQuery,
   getOperationAST,
-  getOperationRootType,
   introspectionFromSchema,
   buildClientSchema,
   buildASTSchema,
@@ -375,8 +366,6 @@ export {
   isEqualType,
   isTypeSubTypeOf,
   doTypesOverlap,
-  assertValidName,
-  isValidNameError,
   BreakingChangeType,
   DangerousChangeType,
   findBreakingChanges,

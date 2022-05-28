@@ -69,8 +69,6 @@ declare type ReducedField<T, R> = T extends null | undefined
   : R;
 /**
  * A KeyMap describes each the traversable properties of each kind of node.
- *
- * @deprecated Please inline it. Will be removed in v17
  */
 export declare type ASTVisitorKeyMap = {
   [NodeT in ASTNode as NodeT['kind']]?: ReadonlyArray<keyof NodeT>;
@@ -180,15 +178,4 @@ export declare function getEnterLeaveForKind(
   visitor: ASTVisitor,
   kind: Kind,
 ): EnterLeaveVisitor<ASTNode>;
-/**
- * Given a visitor instance, if it is leaving or not, and a node kind, return
- * the function the visitor runtime should call.
- *
- * @deprecated Please use `getEnterLeaveForKind` instead. Will be removed in v17
- */
-export declare function getVisitFn(
-  visitor: ASTVisitor,
-  kind: Kind,
-  isLeaving: boolean,
-): ASTVisitFn<ASTNode> | undefined;
 export {};

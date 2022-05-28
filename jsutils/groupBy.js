@@ -1,26 +1,11 @@
-'use strict';
-
-Object.defineProperty(exports, '__esModule', {
-  value: true,
-});
-exports.groupBy = groupBy;
-
+import { AccumulatorMap } from './AccumulatorMap.js';
 /**
  * Groups array items into a Map, given a function to produce grouping key.
  */
-function groupBy(list, keyFn) {
-  const result = new Map();
-
+export function groupBy(list, keyFn) {
+  const result = new AccumulatorMap();
   for (const item of list) {
-    const key = keyFn(item);
-    const group = result.get(key);
-
-    if (group === undefined) {
-      result.set(key, [item]);
-    } else {
-      group.push(item);
-    }
+    result.add(keyFn(item), item);
   }
-
   return result;
 }
