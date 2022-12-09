@@ -1,49 +1,20 @@
-import { devAssert } from '../jsutils/devAssert.js';
-import { inspect } from '../jsutils/inspect.js';
-import { invariant } from '../jsutils/invariant.js';
-import { keyMap } from '../jsutils/keyMap.js';
-import { mapValue } from '../jsutils/mapValue.js';
-import { Kind } from '../language/kinds.js';
-import {
-  isTypeDefinitionNode,
-  isTypeExtensionNode,
-} from '../language/predicates.js';
-import {
-  GraphQLEnumType,
-  GraphQLInputObjectType,
-  GraphQLInterfaceType,
-  GraphQLList,
-  GraphQLNonNull,
-  GraphQLObjectType,
-  GraphQLScalarType,
-  GraphQLUnionType,
-  isEnumType,
-  isInputObjectType,
-  isInterfaceType,
-  isListType,
-  isNonNullType,
-  isObjectType,
-  isScalarType,
-  isUnionType,
-} from '../type/definition.js';
-import {
-  GraphQLDeprecatedDirective,
-  GraphQLDirective,
-  GraphQLSpecifiedByDirective,
-  isSpecifiedDirective,
-} from '../type/directives.js';
-import {
-  introspectionTypes,
-  isIntrospectionType,
-} from '../type/introspection.js';
-import {
-  isSpecifiedScalarType,
-  specifiedScalarTypes,
-} from '../type/scalars.js';
-import { assertSchema, GraphQLSchema } from '../type/schema.js';
-import { assertValidSDLExtension } from '../validation/validate.js';
-import { getDirectiveValues } from '../execution/values.js';
-import { valueFromAST } from './valueFromAST.js';
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.extendSchemaImpl = exports.extendSchema = void 0;
+const AccumulatorMap_js_1 = require('../jsutils/AccumulatorMap.js');
+const inspect_js_1 = require('../jsutils/inspect.js');
+const invariant_js_1 = require('../jsutils/invariant.js');
+const keyMap_js_1 = require('../jsutils/keyMap.js');
+const mapValue_js_1 = require('../jsutils/mapValue.js');
+const kinds_js_1 = require('../language/kinds.js');
+const definition_js_1 = require('../type/definition.js');
+const directives_js_1 = require('../type/directives.js');
+const introspection_js_1 = require('../type/introspection.js');
+const scalars_js_1 = require('../type/scalars.js');
+const schema_js_1 = require('../type/schema.js');
+const validate_js_1 = require('../validation/validate.js');
+const values_js_1 = require('../execution/values.js');
+const valueFromAST_js_1 = require('./valueFromAST.js');
 /**
  * Produces a new schema given an existing schema and a document which may
  * contain GraphQL type extensions and definitions. The original schema will
@@ -56,58 +27,84 @@ import { valueFromAST } from './valueFromAST.js';
  * This algorithm copies the provided schema, applying extensions while
  * producing the copy. The original schema remains unaltered.
  */
-export function extendSchema(schema, documentAST, options) {
-  assertSchema(schema);
-  (documentAST != null && documentAST.kind === Kind.DOCUMENT) ||
-    devAssert(false, 'Must provide valid Document AST.');
+function extendSchema(schema, documentAST, options) {
+  (0, schema_js_1.assertSchema)(schema);
   if (options?.assumeValid !== true && options?.assumeValidSDL !== true) {
-    assertValidSDLExtension(documentAST, schema);
+    (0, validate_js_1.assertValidSDLExtension)(documentAST, schema);
   }
   const schemaConfig = schema.toConfig();
   const extendedConfig = extendSchemaImpl(schemaConfig, documentAST, options);
   return schemaConfig === extendedConfig
     ? schema
-    : new GraphQLSchema(extendedConfig);
+    : new schema_js_1.GraphQLSchema(extendedConfig);
 }
+exports.extendSchema = extendSchema;
 /**
  * @internal
  */
-export function extendSchemaImpl(schemaConfig, documentAST, options) {
+function extendSchemaImpl(schemaConfig, documentAST, options) {
   // Collect the type definitions and extensions found in the document.
   const typeDefs = [];
-  const typeExtensionsMap = Object.create(null);
+  const scalarExtensions = new AccumulatorMap_js_1.AccumulatorMap();
+  const objectExtensions = new AccumulatorMap_js_1.AccumulatorMap();
+  const interfaceExtensions = new AccumulatorMap_js_1.AccumulatorMap();
+  const unionExtensions = new AccumulatorMap_js_1.AccumulatorMap();
+  const enumExtensions = new AccumulatorMap_js_1.AccumulatorMap();
+  const inputObjectExtensions = new AccumulatorMap_js_1.AccumulatorMap();
   // New directives and types are separate because a directives and types can
   // have the same name. For example, a type named "skip".
   const directiveDefs = [];
   let schemaDef;
   // Schema extensions are collected which may add additional operation types.
   const schemaExtensions = [];
+  let isSchemaChanged = false;
   for (const def of documentAST.definitions) {
-    if (def.kind === Kind.SCHEMA_DEFINITION) {
-      schemaDef = def;
-    } else if (def.kind === Kind.SCHEMA_EXTENSION) {
-      schemaExtensions.push(def);
-    } else if (isTypeDefinitionNode(def)) {
-      typeDefs.push(def);
-    } else if (isTypeExtensionNode(def)) {
-      const extendedTypeName = def.name.value;
-      const existingTypeExtensions = typeExtensionsMap[extendedTypeName];
-      typeExtensionsMap[extendedTypeName] = existingTypeExtensions
-        ? existingTypeExtensions.concat([def])
-        : [def];
-    } else if (def.kind === Kind.DIRECTIVE_DEFINITION) {
-      directiveDefs.push(def);
+    switch (def.kind) {
+      case kinds_js_1.Kind.SCHEMA_DEFINITION:
+        schemaDef = def;
+        break;
+      case kinds_js_1.Kind.SCHEMA_EXTENSION:
+        schemaExtensions.push(def);
+        break;
+      case kinds_js_1.Kind.DIRECTIVE_DEFINITION:
+        directiveDefs.push(def);
+        break;
+      // Type Definitions
+      case kinds_js_1.Kind.SCALAR_TYPE_DEFINITION:
+      case kinds_js_1.Kind.OBJECT_TYPE_DEFINITION:
+      case kinds_js_1.Kind.INTERFACE_TYPE_DEFINITION:
+      case kinds_js_1.Kind.UNION_TYPE_DEFINITION:
+      case kinds_js_1.Kind.ENUM_TYPE_DEFINITION:
+      case kinds_js_1.Kind.INPUT_OBJECT_TYPE_DEFINITION:
+        typeDefs.push(def);
+        break;
+      // Type System Extensions
+      case kinds_js_1.Kind.SCALAR_TYPE_EXTENSION:
+        scalarExtensions.add(def.name.value, def);
+        break;
+      case kinds_js_1.Kind.OBJECT_TYPE_EXTENSION:
+        objectExtensions.add(def.name.value, def);
+        break;
+      case kinds_js_1.Kind.INTERFACE_TYPE_EXTENSION:
+        interfaceExtensions.add(def.name.value, def);
+        break;
+      case kinds_js_1.Kind.UNION_TYPE_EXTENSION:
+        unionExtensions.add(def.name.value, def);
+        break;
+      case kinds_js_1.Kind.ENUM_TYPE_EXTENSION:
+        enumExtensions.add(def.name.value, def);
+        break;
+      case kinds_js_1.Kind.INPUT_OBJECT_TYPE_EXTENSION:
+        inputObjectExtensions.add(def.name.value, def);
+        break;
+      default:
+        continue;
     }
+    isSchemaChanged = true;
   }
   // If this document contains no new types, extensions, or directives then
   // return the same unmodified GraphQLSchema instance.
-  if (
-    Object.keys(typeExtensionsMap).length === 0 &&
-    typeDefs.length === 0 &&
-    directiveDefs.length === 0 &&
-    schemaExtensions.length === 0 &&
-    schemaDef == null
-  ) {
+  if (!isSchemaChanged) {
     return schemaConfig;
   }
   const typeMap = Object.create(null);
@@ -130,14 +127,14 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   };
   // Then produce and return a Schema config with these types.
   return {
-    description: schemaDef?.description?.value,
+    description: schemaDef?.description?.value ?? schemaConfig.description,
     ...operationTypes,
     types: Object.values(typeMap),
     directives: [
       ...schemaConfig.directives.map(replaceDirective),
       ...directiveDefs.map(buildDirective),
     ],
-    extensions: Object.create(null),
+    extensions: schemaConfig.extensions,
     astNode: schemaDef ?? schemaConfig.astNode,
     extensionASTNodes: schemaConfig.extensionASTNodes.concat(schemaExtensions),
     assumeValid: options?.assumeValid ?? false,
@@ -145,13 +142,13 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   // Below are functions used for producing this schema that have closed over
   // this scope and have access to the schema, cache, and newly defined types.
   function replaceType(type) {
-    if (isListType(type)) {
+    if ((0, definition_js_1.isListType)(type)) {
       // @ts-expect-error
-      return new GraphQLList(replaceType(type.ofType));
+      return new definition_js_1.GraphQLList(replaceType(type.ofType));
     }
-    if (isNonNullType(type)) {
+    if ((0, definition_js_1.isNonNullType)(type)) {
       // @ts-expect-error
-      return new GraphQLNonNull(replaceType(type.ofType));
+      return new definition_js_1.GraphQLNonNull(replaceType(type.ofType));
     }
     // @ts-expect-error FIXME
     return replaceNamedType(type);
@@ -163,50 +160,54 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
     return typeMap[type.name];
   }
   function replaceDirective(directive) {
-    if (isSpecifiedDirective(directive)) {
+    if ((0, directives_js_1.isSpecifiedDirective)(directive)) {
       // Builtin directives are not extended.
       return directive;
     }
     const config = directive.toConfig();
-    return new GraphQLDirective({
+    return new directives_js_1.GraphQLDirective({
       ...config,
-      args: mapValue(config.args, extendArg),
+      args: (0, mapValue_js_1.mapValue)(config.args, extendArg),
     });
   }
   function extendNamedType(type) {
-    if (isIntrospectionType(type) || isSpecifiedScalarType(type)) {
+    if (
+      (0, introspection_js_1.isIntrospectionType)(type) ||
+      (0, scalars_js_1.isSpecifiedScalarType)(type)
+    ) {
       // Builtin types are not extended.
       return type;
     }
-    if (isScalarType(type)) {
+    if ((0, definition_js_1.isScalarType)(type)) {
       return extendScalarType(type);
     }
-    if (isObjectType(type)) {
+    if ((0, definition_js_1.isObjectType)(type)) {
       return extendObjectType(type);
     }
-    if (isInterfaceType(type)) {
+    if ((0, definition_js_1.isInterfaceType)(type)) {
       return extendInterfaceType(type);
     }
-    if (isUnionType(type)) {
+    if ((0, definition_js_1.isUnionType)(type)) {
       return extendUnionType(type);
     }
-    if (isEnumType(type)) {
+    if ((0, definition_js_1.isEnumType)(type)) {
       return extendEnumType(type);
     }
-    if (isInputObjectType(type)) {
+    if ((0, definition_js_1.isInputObjectType)(type)) {
       return extendInputObjectType(type);
     }
     /* c8 ignore next 3 */
     // Not reachable, all possible type definition nodes have been considered.
-    false || invariant(false, 'Unexpected type: ' + inspect(type));
+    false ||
+      invariant(false, 'Unexpected type: ' + (0, inspect_js_1.inspect)(type));
   }
   function extendInputObjectType(type) {
     const config = type.toConfig();
-    const extensions = typeExtensionsMap[config.name] ?? [];
-    return new GraphQLInputObjectType({
+    const extensions = inputObjectExtensions.get(config.name) ?? [];
+    return new definition_js_1.GraphQLInputObjectType({
       ...config,
       fields: () => ({
-        ...mapValue(config.fields, (field) => ({
+        ...(0, mapValue_js_1.mapValue)(config.fields, (field) => ({
           ...field,
           type: replaceType(field.type),
         })),
@@ -217,8 +218,8 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   }
   function extendEnumType(type) {
     const config = type.toConfig();
-    const extensions = typeExtensionsMap[type.name] ?? [];
-    return new GraphQLEnumType({
+    const extensions = enumExtensions.get(type.name) ?? [];
+    return new definition_js_1.GraphQLEnumType({
       ...config,
       values: {
         ...config.values,
@@ -229,12 +230,12 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   }
   function extendScalarType(type) {
     const config = type.toConfig();
-    const extensions = typeExtensionsMap[config.name] ?? [];
+    const extensions = scalarExtensions.get(config.name) ?? [];
     let specifiedByURL = config.specifiedByURL;
     for (const extensionNode of extensions) {
       specifiedByURL = getSpecifiedByURL(extensionNode) ?? specifiedByURL;
     }
-    return new GraphQLScalarType({
+    return new definition_js_1.GraphQLScalarType({
       ...config,
       specifiedByURL,
       extensionASTNodes: config.extensionASTNodes.concat(extensions),
@@ -242,15 +243,15 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   }
   function extendObjectType(type) {
     const config = type.toConfig();
-    const extensions = typeExtensionsMap[config.name] ?? [];
-    return new GraphQLObjectType({
+    const extensions = objectExtensions.get(config.name) ?? [];
+    return new definition_js_1.GraphQLObjectType({
       ...config,
       interfaces: () => [
         ...type.getInterfaces().map(replaceNamedType),
         ...buildInterfaces(extensions),
       ],
       fields: () => ({
-        ...mapValue(config.fields, extendField),
+        ...(0, mapValue_js_1.mapValue)(config.fields, extendField),
         ...buildFieldMap(extensions),
       }),
       extensionASTNodes: config.extensionASTNodes.concat(extensions),
@@ -258,15 +259,15 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   }
   function extendInterfaceType(type) {
     const config = type.toConfig();
-    const extensions = typeExtensionsMap[config.name] ?? [];
-    return new GraphQLInterfaceType({
+    const extensions = interfaceExtensions.get(config.name) ?? [];
+    return new definition_js_1.GraphQLInterfaceType({
       ...config,
       interfaces: () => [
         ...type.getInterfaces().map(replaceNamedType),
         ...buildInterfaces(extensions),
       ],
       fields: () => ({
-        ...mapValue(config.fields, extendField),
+        ...(0, mapValue_js_1.mapValue)(config.fields, extendField),
         ...buildFieldMap(extensions),
       }),
       extensionASTNodes: config.extensionASTNodes.concat(extensions),
@@ -274,8 +275,8 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   }
   function extendUnionType(type) {
     const config = type.toConfig();
-    const extensions = typeExtensionsMap[config.name] ?? [];
-    return new GraphQLUnionType({
+    const extensions = unionExtensions.get(config.name) ?? [];
+    return new definition_js_1.GraphQLUnionType({
       ...config,
       types: () => [
         ...type.getTypes().map(replaceNamedType),
@@ -288,7 +289,7 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
     return {
       ...field,
       type: replaceType(field.type),
-      args: field.args && mapValue(field.args, extendArg),
+      args: field.args && (0, mapValue_js_1.mapValue)(field.args, extendArg),
     };
   }
   function extendArg(arg) {
@@ -322,16 +323,16 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
     return type;
   }
   function getWrappedType(node) {
-    if (node.kind === Kind.LIST_TYPE) {
-      return new GraphQLList(getWrappedType(node.type));
+    if (node.kind === kinds_js_1.Kind.LIST_TYPE) {
+      return new definition_js_1.GraphQLList(getWrappedType(node.type));
     }
-    if (node.kind === Kind.NON_NULL_TYPE) {
-      return new GraphQLNonNull(getWrappedType(node.type));
+    if (node.kind === kinds_js_1.Kind.NON_NULL_TYPE) {
+      return new definition_js_1.GraphQLNonNull(getWrappedType(node.type));
     }
     return getNamedType(node);
   }
   function buildDirective(node) {
-    return new GraphQLDirective({
+    return new directives_js_1.GraphQLDirective({
       name: node.name.value,
       description: node.description?.value,
       // @ts-expect-error
@@ -373,7 +374,10 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
       argConfigMap[arg.name.value] = {
         type,
         description: arg.description?.value,
-        defaultValue: valueFromAST(arg.defaultValue, type),
+        defaultValue: (0, valueFromAST_js_1.valueFromAST)(
+          arg.defaultValue,
+          type,
+        ),
         deprecationReason: getDeprecationReason(arg),
         astNode: arg,
       };
@@ -393,7 +397,10 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
         inputFieldMap[field.name.value] = {
           type,
           description: field.description?.value,
-          defaultValue: valueFromAST(field.defaultValue, type),
+          defaultValue: (0, valueFromAST_js_1.valueFromAST)(
+            field.defaultValue,
+            type,
+          ),
           deprecationReason: getDeprecationReason(field),
           astNode: field,
         };
@@ -438,11 +445,11 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
   }
   function buildType(astNode) {
     const name = astNode.name.value;
-    const extensionASTNodes = typeExtensionsMap[name] ?? [];
     switch (astNode.kind) {
-      case Kind.OBJECT_TYPE_DEFINITION: {
+      case kinds_js_1.Kind.OBJECT_TYPE_DEFINITION: {
+        const extensionASTNodes = objectExtensions.get(name) ?? [];
         const allNodes = [astNode, ...extensionASTNodes];
-        return new GraphQLObjectType({
+        return new definition_js_1.GraphQLObjectType({
           name,
           description: astNode.description?.value,
           interfaces: () => buildInterfaces(allNodes),
@@ -451,9 +458,10 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
           extensionASTNodes,
         });
       }
-      case Kind.INTERFACE_TYPE_DEFINITION: {
+      case kinds_js_1.Kind.INTERFACE_TYPE_DEFINITION: {
+        const extensionASTNodes = interfaceExtensions.get(name) ?? [];
         const allNodes = [astNode, ...extensionASTNodes];
-        return new GraphQLInterfaceType({
+        return new definition_js_1.GraphQLInterfaceType({
           name,
           description: astNode.description?.value,
           interfaces: () => buildInterfaces(allNodes),
@@ -462,9 +470,10 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
           extensionASTNodes,
         });
       }
-      case Kind.ENUM_TYPE_DEFINITION: {
+      case kinds_js_1.Kind.ENUM_TYPE_DEFINITION: {
+        const extensionASTNodes = enumExtensions.get(name) ?? [];
         const allNodes = [astNode, ...extensionASTNodes];
-        return new GraphQLEnumType({
+        return new definition_js_1.GraphQLEnumType({
           name,
           description: astNode.description?.value,
           values: buildEnumValueMap(allNodes),
@@ -472,9 +481,10 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
           extensionASTNodes,
         });
       }
-      case Kind.UNION_TYPE_DEFINITION: {
+      case kinds_js_1.Kind.UNION_TYPE_DEFINITION: {
+        const extensionASTNodes = unionExtensions.get(name) ?? [];
         const allNodes = [astNode, ...extensionASTNodes];
-        return new GraphQLUnionType({
+        return new definition_js_1.GraphQLUnionType({
           name,
           description: astNode.description?.value,
           types: () => buildUnionTypes(allNodes),
@@ -482,8 +492,9 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
           extensionASTNodes,
         });
       }
-      case Kind.SCALAR_TYPE_DEFINITION: {
-        return new GraphQLScalarType({
+      case kinds_js_1.Kind.SCALAR_TYPE_DEFINITION: {
+        const extensionASTNodes = scalarExtensions.get(name) ?? [];
+        return new definition_js_1.GraphQLScalarType({
           name,
           description: astNode.description?.value,
           specifiedByURL: getSpecifiedByURL(astNode),
@@ -491,9 +502,10 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
           extensionASTNodes,
         });
       }
-      case Kind.INPUT_OBJECT_TYPE_DEFINITION: {
+      case kinds_js_1.Kind.INPUT_OBJECT_TYPE_DEFINITION: {
+        const extensionASTNodes = inputObjectExtensions.get(name) ?? [];
         const allNodes = [astNode, ...extensionASTNodes];
-        return new GraphQLInputObjectType({
+        return new definition_js_1.GraphQLInputObjectType({
           name,
           description: astNode.description?.value,
           fields: () => buildInputFieldMap(allNodes),
@@ -504,8 +516,12 @@ export function extendSchemaImpl(schemaConfig, documentAST, options) {
     }
   }
 }
-const stdTypeMap = keyMap(
-  [...specifiedScalarTypes, ...introspectionTypes],
+exports.extendSchemaImpl = extendSchemaImpl;
+const stdTypeMap = (0, keyMap_js_1.keyMap)(
+  [
+    ...scalars_js_1.specifiedScalarTypes,
+    ...introspection_js_1.introspectionTypes,
+  ],
   (type) => type.name,
 );
 /**
@@ -513,7 +529,10 @@ const stdTypeMap = keyMap(
  * deprecation reason.
  */
 function getDeprecationReason(node) {
-  const deprecated = getDirectiveValues(GraphQLDeprecatedDirective, node);
+  const deprecated = (0, values_js_1.getDirectiveValues)(
+    directives_js_1.GraphQLDeprecatedDirective,
+    node,
+  );
   // @ts-expect-error validated by `getDirectiveValues`
   return deprecated?.reason;
 }
@@ -521,7 +540,10 @@ function getDeprecationReason(node) {
  * Given a scalar node, returns the string value for the specifiedByURL.
  */
 function getSpecifiedByURL(node) {
-  const specifiedBy = getDirectiveValues(GraphQLSpecifiedByDirective, node);
+  const specifiedBy = (0, values_js_1.getDirectiveValues)(
+    directives_js_1.GraphQLSpecifiedByDirective,
+    node,
+  );
   // @ts-expect-error validated by `getDirectiveValues`
   return specifiedBy?.url;
 }

@@ -1,12 +1,12 @@
-import { AccumulatorMap } from '../jsutils/AccumulatorMap.js';
-import { Kind } from '../language/kinds.js';
-import { isAbstractType } from '../type/definition.js';
-import {
-  GraphQLIncludeDirective,
-  GraphQLSkipDirective,
-} from '../type/directives.js';
-import { typeFromAST } from '../utilities/typeFromAST.js';
-import { getDirectiveValues } from './values.js';
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.collectSubfields = exports.collectFields = void 0;
+const AccumulatorMap_js_1 = require('../jsutils/AccumulatorMap.js');
+const kinds_js_1 = require('../language/kinds.js');
+const definition_js_1 = require('../type/definition.js');
+const directives_js_1 = require('../type/directives.js');
+const typeFromAST_js_1 = require('../utilities/typeFromAST.js');
+const values_js_1 = require('./values.js');
 /**
  * Given a selectionSet, collects all of the fields and returns them.
  *
@@ -16,14 +16,15 @@ import { getDirectiveValues } from './values.js';
  *
  * @internal
  */
-export function collectFields(
+function collectFields(
   schema,
   fragments,
   variableValues,
   runtimeType,
   selectionSet,
 ) {
-  const fields = new AccumulatorMap();
+  const fields = new AccumulatorMap_js_1.AccumulatorMap();
+  const patches = [];
   collectFieldsImpl(
     schema,
     fragments,
@@ -31,10 +32,12 @@ export function collectFields(
     runtimeType,
     selectionSet,
     fields,
+    patches,
     new Set(),
   );
-  return fields;
+  return { fields, patches };
 }
+exports.collectFields = collectFields;
 /**
  * Given an array of field nodes, collects all of the subfields of the passed
  * in fields, and returns them at the end.
@@ -45,15 +48,20 @@ export function collectFields(
  *
  * @internal
  */
-export function collectSubfields(
+function collectSubfields(
   schema,
   fragments,
   variableValues,
   returnType,
   fieldNodes,
 ) {
-  const subFieldNodes = new AccumulatorMap();
+  const subFieldNodes = new AccumulatorMap_js_1.AccumulatorMap();
   const visitedFragmentNames = new Set();
+  const subPatches = [];
+  const subFieldsAndPatches = {
+    fields: subFieldNodes,
+    patches: subPatches,
+  };
   for (const node of fieldNodes) {
     if (node.selectionSet) {
       collectFieldsImpl(
@@ -63,12 +71,15 @@ export function collectSubfields(
         returnType,
         node.selectionSet,
         subFieldNodes,
+        subPatches,
         visitedFragmentNames,
       );
     }
   }
-  return subFieldNodes;
+  return subFieldsAndPatches;
 }
+exports.collectSubfields = collectSubfields;
+// eslint-disable-next-line max-params
 function collectFieldsImpl(
   schema,
   fragments,
@@ -76,44 +87,65 @@ function collectFieldsImpl(
   runtimeType,
   selectionSet,
   fields,
+  patches,
   visitedFragmentNames,
 ) {
   for (const selection of selectionSet.selections) {
     switch (selection.kind) {
-      case Kind.FIELD: {
+      case kinds_js_1.Kind.FIELD: {
         if (!shouldIncludeNode(variableValues, selection)) {
           continue;
         }
         fields.add(getFieldEntryKey(selection), selection);
         break;
       }
-      case Kind.INLINE_FRAGMENT: {
+      case kinds_js_1.Kind.INLINE_FRAGMENT: {
         if (
           !shouldIncludeNode(variableValues, selection) ||
           !doesFragmentConditionMatch(schema, selection, runtimeType)
         ) {
           continue;
         }
-        collectFieldsImpl(
-          schema,
-          fragments,
-          variableValues,
-          runtimeType,
-          selection.selectionSet,
-          fields,
-          visitedFragmentNames,
-        );
+        const defer = getDeferValues(variableValues, selection);
+        if (defer) {
+          const patchFields = new AccumulatorMap_js_1.AccumulatorMap();
+          collectFieldsImpl(
+            schema,
+            fragments,
+            variableValues,
+            runtimeType,
+            selection.selectionSet,
+            patchFields,
+            patches,
+            visitedFragmentNames,
+          );
+          patches.push({
+            label: defer.label,
+            fields: patchFields,
+          });
+        } else {
+          collectFieldsImpl(
+            schema,
+            fragments,
+            variableValues,
+            runtimeType,
+            selection.selectionSet,
+            fields,
+            patches,
+            visitedFragmentNames,
+          );
+        }
         break;
       }
-      case Kind.FRAGMENT_SPREAD: {
+      case kinds_js_1.Kind.FRAGMENT_SPREAD: {
         const fragName = selection.name.value;
-        if (
-          visitedFragmentNames.has(fragName) ||
-          !shouldIncludeNode(variableValues, selection)
-        ) {
+        if (!shouldIncludeNode(variableValues, selection)) {
           continue;
         }
-        visitedFragmentNames.add(fragName);
+        const defer = getDeferValues(variableValues, selection);
+        if (visitedFragmentNames.has(fragName) && !defer) {
+          continue;
+        }
         const fragment = fragments[fragName];
         if (
           !fragment ||
@@ -121,31 +153,78 @@ function collectFieldsImpl(
         ) {
           continue;
         }
-        collectFieldsImpl(
-          schema,
-          fragments,
-          variableValues,
-          runtimeType,
-          fragment.selectionSet,
-          fields,
-          visitedFragmentNames,
-        );
+        if (!defer) {
+          visitedFragmentNames.add(fragName);
+        }
+        if (defer) {
+          const patchFields = new AccumulatorMap_js_1.AccumulatorMap();
+          collectFieldsImpl(
+            schema,
+            fragments,
+            variableValues,
+            runtimeType,
+            fragment.selectionSet,
+            patchFields,
+            patches,
+            visitedFragmentNames,
+          );
+          patches.push({
+            label: defer.label,
+            fields: patchFields,
+          });
+        } else {
+          collectFieldsImpl(
+            schema,
+            fragments,
+            variableValues,
+            runtimeType,
+            fragment.selectionSet,
+            fields,
+            patches,
+            visitedFragmentNames,
+          );
+        }
         break;
       }
     }
   }
 }
 /**
+ * Returns an object containing the `@defer` arguments if a field should be
+ * deferred based on the experimental flag, defer directive present and
+ * not disabled by the "if" argument.
+ */
+function getDeferValues(variableValues, node) {
+  const defer = (0, values_js_1.getDirectiveValues)(
+    directives_js_1.GraphQLDeferDirective,
+    node,
+    variableValues,
+  );
+  if (!defer) {
+    return;
+  }
+  if (defer.if === false) {
+    return;
+  }
+  return {
+    label: typeof defer.label === 'string' ? defer.label : undefined,
+  };
+}
+/**
  * Determines if a field should be included based on the `@include` and `@skip`
  * directives, where `@skip` has higher precedence than `@include`.
  */
 function shouldIncludeNode(variableValues, node) {
-  const skip = getDirectiveValues(GraphQLSkipDirective, node, variableValues);
+  const skip = (0, values_js_1.getDirectiveValues)(
+    directives_js_1.GraphQLSkipDirective,
+    node,
+    variableValues,
+  );
   if (skip?.if === true) {
     return false;
   }
-  const include = getDirectiveValues(
-    GraphQLIncludeDirective,
+  const include = (0, values_js_1.getDirectiveValues)(
+    directives_js_1.GraphQLIncludeDirective,
     node,
     variableValues,
   );
@@ -162,11 +241,14 @@ function doesFragmentConditionMatch(schema, fragment, type) {
   if (!typeConditionNode) {
     return true;
   }
-  const conditionalType = typeFromAST(schema, typeConditionNode);
+  const conditionalType = (0, typeFromAST_js_1.typeFromAST)(
+    schema,
+    typeConditionNode,
+  );
   if (conditionalType === type) {
     return true;
   }
-  if (isAbstractType(conditionalType)) {
+  if ((0, definition_js_1.isAbstractType)(conditionalType)) {
     return schema.isSubType(conditionalType, type);
   }
   return false;

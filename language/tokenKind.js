@@ -1,12 +1,16 @@
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.TokenKind = void 0;
 /**
  * An exported enum describing the different kinds of tokens that the
  * lexer emits.
  */
-export var TokenKind;
+var TokenKind;
 (function (TokenKind) {
   TokenKind['SOF'] = '<SOF>';
   TokenKind['EOF'] = '<EOF>';
   TokenKind['BANG'] = '!';
+  TokenKind['QUESTION_MARK'] = '?';
   TokenKind['DOLLAR'] = '$';
   TokenKind['AMP'] = '&';
   TokenKind['PAREN_L'] = '(';
@@ -26,4 +30,4 @@ export var TokenKind;
   TokenKind['STRING'] = 'String';
   TokenKind['BLOCK_STRING'] = 'BlockString';
   TokenKind['COMMENT'] = 'Comment';
-})(TokenKind || (TokenKind = {}));
+})((TokenKind = exports.TokenKind || (exports.TokenKind = {})));

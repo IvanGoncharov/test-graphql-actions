@@ -1,7 +1,10 @@
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.Kind = void 0;
 /**
  * The set of allowed kind values for AST nodes.
  */
-export var Kind;
+var Kind;
 (function (Kind) {
   /** Name */
   Kind['NAME'] = 'Name';
@@ -12,6 +15,10 @@ export var Kind;
   Kind['SELECTION_SET'] = 'SelectionSet';
   Kind['FIELD'] = 'Field';
   Kind['ARGUMENT'] = 'Argument';
+  /** Nullability Modifiers */
+  Kind['LIST_NULLABILITY_OPERATOR'] = 'ListNullabilityOperator';
+  Kind['NON_NULL_ASSERTION'] = 'NonNullAssertion';
+  Kind['ERROR_BOUNDARY'] = 'ErrorBoundary';
   /** Fragments */
   Kind['FRAGMENT_SPREAD'] = 'FragmentSpread';
   Kind['INLINE_FRAGMENT'] = 'InlineFragment';
@@ -57,4 +64,4 @@ export var Kind;
   Kind['UNION_TYPE_EXTENSION'] = 'UnionTypeExtension';
   Kind['ENUM_TYPE_EXTENSION'] = 'EnumTypeExtension';
   Kind['INPUT_OBJECT_TYPE_EXTENSION'] = 'InputObjectTypeExtension';
-})(Kind || (Kind = {}));
+})((Kind = exports.Kind || (exports.Kind = {})));

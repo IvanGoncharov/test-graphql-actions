@@ -1,10 +1,10 @@
-import type { Maybe } from '../jsutils/Maybe';
-import type { DirectiveDefinitionNode } from '../language/ast';
-import { DirectiveLocation } from '../language/directiveLocation';
+import type { Maybe } from '../jsutils/Maybe.js';
+import type { DirectiveDefinitionNode } from '../language/ast.js';
+import { DirectiveLocation } from '../language/directiveLocation.js';
 import type {
   GraphQLArgument,
   GraphQLFieldConfigArgumentMap,
-} from './definition';
+} from './definition.js';
 /**
  * Test if the given value is a GraphQL directive.
  */
@@ -64,6 +64,14 @@ export declare const GraphQLIncludeDirective: GraphQLDirective;
  * Used to conditionally skip (exclude) fields or fragments.
  */
 export declare const GraphQLSkipDirective: GraphQLDirective;
+/**
+ * Used to conditionally defer fragments.
+ */
+export declare const GraphQLDeferDirective: GraphQLDirective;
+/**
+ * Used to conditionally stream list fields.
+ */
+export declare const GraphQLStreamDirective: GraphQLDirective;
 /**
  * Constant string used for default reason for a deprecation.
  */

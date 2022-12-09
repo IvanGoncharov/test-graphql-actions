@@ -1,6 +1,8 @@
-import { devAssert } from '../jsutils/devAssert.js';
-import { inspect } from '../jsutils/inspect.js';
-import { instanceOf } from '../jsutils/instanceOf.js';
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.isSource = exports.Source = void 0;
+const devAssert_js_1 = require('../jsutils/devAssert.js');
+const instanceOf_js_1 = require('../jsutils/instanceOf.js');
 /**
  * A representation of source input to GraphQL. The `name` and `locationOffset` parameters are
  * optional, but they are useful for clients who store GraphQL documents in source files.
@@ -8,14 +10,12 @@ import { instanceOf } from '../jsutils/instanceOf.js';
  * be useful for `name` to be `"Foo.graphql"` and location to be `{ line: 40, column: 1 }`.
  * The `line` and `column` properties in `locationOffset` are 1-indexed.
  */
-export class Source {
+class Source {
   constructor(
     body,
     name = 'GraphQL request',
     locationOffset = { line: 1, column: 1 },
   ) {
-    typeof body === 'string' ||
-      devAssert(false, `Body must be a string. Received: ${inspect(body)}.`);
     this.body = body;
     this.name = name;
     this.locationOffset = locationOffset;
@@ -34,11 +34,13 @@ export class Source {
     return 'Source';
   }
 }
+exports.Source = Source;
 /**
  * Test if the given value is a Source object.
  *
  * @internal
  */
-export function isSource(source) {
-  return instanceOf(source, Source);
+function isSource(source) {
+  return (0, instanceOf_js_1.instanceOf)(source, Source);
 }
+exports.isSource = isSource;

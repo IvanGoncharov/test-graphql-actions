@@ -1,7 +1,7 @@
-import type { Maybe } from '../jsutils/Maybe';
-import type { ASTNode } from '../language/ast';
-import type { SourceLocation } from '../language/location';
-import type { Source } from '../language/source';
+import type { Maybe } from '../jsutils/Maybe.js';
+import type { ASTNode } from '../language/ast.js';
+import type { SourceLocation } from '../language/location.js';
+import type { Source } from '../language/source.js';
 /**
  * Custom extensions
  *
@@ -15,7 +15,7 @@ export interface GraphQLErrorExtensions {
   [attributeName: string]: unknown;
 }
 export interface GraphQLErrorOptions {
-  nodes?: ReadonlyArray<ASTNode> | ASTNode | null;
+  nodes?: ReadonlyArray<ASTNode> | ASTNode | null | undefined;
   source?: Maybe<Source>;
   positions?: Maybe<ReadonlyArray<number>>;
   path?: Maybe<ReadonlyArray<string | number>>;

@@ -1,6 +1,6 @@
 {
   "name": "graphql",
-  "version": "17.0.0-alpha.1",
+  "version": "17.0.0-alpha.2",
   "description": "A Query Language and Runtime which can target any service.",
   "license": "MIT",
   "typesVersions": {
@@ -34,16 +34,6 @@
   "publishConfig": {
     "tag": "alpha"
   },
-  "type": "module",
-  "exports": {
-    "./error": "./error/index.js",
-    "./execution": "./execution/index.js",
-    ".": "./index.js",
-    "./language": "./language/index.js",
-    "./type": "./type/index.js",
-    "./utilities": "./utilities/index.js",
-    "./validation": "./validation/index.js",
-    "./*.js": "./*.js",
-    "./*": "./*.js"
-  }
+  "main": "index",
+  "module": "index.mjs"
 }

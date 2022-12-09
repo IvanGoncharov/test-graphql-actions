@@ -1,20 +1,72 @@
-import { devAssert } from '../jsutils/devAssert.js';
-import { didYouMean } from '../jsutils/didYouMean.js';
-import { identityFunc } from '../jsutils/identityFunc.js';
-import { inspect } from '../jsutils/inspect.js';
-import { instanceOf } from '../jsutils/instanceOf.js';
-import { isObjectLike } from '../jsutils/isObjectLike.js';
-import { keyMap } from '../jsutils/keyMap.js';
-import { keyValMap } from '../jsutils/keyValMap.js';
-import { mapValue } from '../jsutils/mapValue.js';
-import { suggestionList } from '../jsutils/suggestionList.js';
-import { toObjMap } from '../jsutils/toObjMap.js';
-import { GraphQLError } from '../error/GraphQLError.js';
-import { Kind } from '../language/kinds.js';
-import { print } from '../language/printer.js';
-import { valueFromASTUntyped } from '../utilities/valueFromASTUntyped.js';
-import { assertEnumValueName, assertName } from './assertName.js';
-export function isType(type) {
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.isRequiredInputField =
+  exports.GraphQLInputObjectType =
+  exports.GraphQLEnumType =
+  exports.GraphQLUnionType =
+  exports.GraphQLInterfaceType =
+  exports.isRequiredArgument =
+  exports.argsToArgsConfig =
+  exports.defineArguments =
+  exports.GraphQLObjectType =
+  exports.GraphQLScalarType =
+  exports.resolveObjMapThunk =
+  exports.resolveReadonlyArrayThunk =
+  exports.getNamedType =
+  exports.assertNamedType =
+  exports.isNamedType =
+  exports.getNullableType =
+  exports.assertNullableType =
+  exports.isNullableType =
+  exports.assertWrappingType =
+  exports.isWrappingType =
+  exports.GraphQLNonNull =
+  exports.GraphQLList =
+  exports.assertAbstractType =
+  exports.isAbstractType =
+  exports.assertCompositeType =
+  exports.isCompositeType =
+  exports.assertLeafType =
+  exports.isLeafType =
+  exports.assertOutputType =
+  exports.isOutputType =
+  exports.assertInputType =
+  exports.isInputType =
+  exports.assertNonNullType =
+  exports.isNonNullType =
+  exports.assertListType =
+  exports.isListType =
+  exports.assertInputObjectType =
+  exports.isInputObjectType =
+  exports.assertEnumType =
+  exports.isEnumType =
+  exports.assertUnionType =
+  exports.isUnionType =
+  exports.assertInterfaceType =
+  exports.isInterfaceType =
+  exports.assertObjectType =
+  exports.isObjectType =
+  exports.assertScalarType =
+  exports.isScalarType =
+  exports.assertType =
+  exports.isType =
+    void 0;
+const devAssert_js_1 = require('../jsutils/devAssert.js');
+const didYouMean_js_1 = require('../jsutils/didYouMean.js');
+const identityFunc_js_1 = require('../jsutils/identityFunc.js');
+const inspect_js_1 = require('../jsutils/inspect.js');
+const instanceOf_js_1 = require('../jsutils/instanceOf.js');
+const keyMap_js_1 = require('../jsutils/keyMap.js');
+const keyValMap_js_1 = require('../jsutils/keyValMap.js');
+const mapValue_js_1 = require('../jsutils/mapValue.js');
+const suggestionList_js_1 = require('../jsutils/suggestionList.js');
+const toObjMap_js_1 = require('../jsutils/toObjMap.js');
+const GraphQLError_js_1 = require('../error/GraphQLError.js');
+const kinds_js_1 = require('../language/kinds.js');
+const printer_js_1 = require('../language/printer.js');
+const valueFromASTUntyped_js_1 = require('../utilities/valueFromASTUntyped.js');
+const assertName_js_1 = require('./assertName.js');
+function isType(type) {
   return (
     isScalarType(type) ||
     isObjectType(type) ||
@@ -26,92 +78,134 @@ export function isType(type) {
     isNonNullType(type)
   );
 }
-export function assertType(type) {
+exports.isType = isType;
+function assertType(type) {
   if (!isType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL type.`,
+    );
   }
   return type;
 }
+exports.assertType = assertType;
 /**
  * There are predicates for each kind of GraphQL type.
  */
-export function isScalarType(type) {
-  return instanceOf(type, GraphQLScalarType);
+function isScalarType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLScalarType);
 }
-export function assertScalarType(type) {
+exports.isScalarType = isScalarType;
+function assertScalarType(type) {
   if (!isScalarType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL Scalar type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL Scalar type.`,
+    );
   }
   return type;
 }
-export function isObjectType(type) {
-  return instanceOf(type, GraphQLObjectType);
+exports.assertScalarType = assertScalarType;
+function isObjectType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLObjectType);
 }
-export function assertObjectType(type) {
+exports.isObjectType = isObjectType;
+function assertObjectType(type) {
   if (!isObjectType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL Object type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL Object type.`,
+    );
   }
   return type;
 }
-export function isInterfaceType(type) {
-  return instanceOf(type, GraphQLInterfaceType);
+exports.assertObjectType = assertObjectType;
+function isInterfaceType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLInterfaceType);
 }
-export function assertInterfaceType(type) {
+exports.isInterfaceType = isInterfaceType;
+function assertInterfaceType(type) {
   if (!isInterfaceType(type)) {
     throw new Error(
-      `Expected ${inspect(type)} to be a GraphQL Interface type.`,
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL Interface type.`,
     );
   }
   return type;
 }
-export function isUnionType(type) {
-  return instanceOf(type, GraphQLUnionType);
+exports.assertInterfaceType = assertInterfaceType;
+function isUnionType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLUnionType);
 }
-export function assertUnionType(type) {
+exports.isUnionType = isUnionType;
+function assertUnionType(type) {
   if (!isUnionType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL Union type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL Union type.`,
+    );
   }
   return type;
 }
-export function isEnumType(type) {
-  return instanceOf(type, GraphQLEnumType);
+exports.assertUnionType = assertUnionType;
+function isEnumType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLEnumType);
 }
-export function assertEnumType(type) {
+exports.isEnumType = isEnumType;
+function assertEnumType(type) {
   if (!isEnumType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL Enum type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL Enum type.`,
+    );
   }
   return type;
 }
-export function isInputObjectType(type) {
-  return instanceOf(type, GraphQLInputObjectType);
+exports.assertEnumType = assertEnumType;
+function isInputObjectType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLInputObjectType);
 }
-export function assertInputObjectType(type) {
+exports.isInputObjectType = isInputObjectType;
+function assertInputObjectType(type) {
   if (!isInputObjectType(type)) {
     throw new Error(
-      `Expected ${inspect(type)} to be a GraphQL Input Object type.`,
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL Input Object type.`,
     );
   }
   return type;
 }
-export function isListType(type) {
-  return instanceOf(type, GraphQLList);
+exports.assertInputObjectType = assertInputObjectType;
+function isListType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLList);
 }
-export function assertListType(type) {
+exports.isListType = isListType;
+function assertListType(type) {
   if (!isListType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL List type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL List type.`,
+    );
   }
   return type;
 }
-export function isNonNullType(type) {
-  return instanceOf(type, GraphQLNonNull);
+exports.assertListType = assertListType;
+function isNonNullType(type) {
+  return (0, instanceOf_js_1.instanceOf)(type, GraphQLNonNull);
 }
-export function assertNonNullType(type) {
+exports.isNonNullType = isNonNullType;
+function assertNonNullType(type) {
   if (!isNonNullType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL Non-Null type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL Non-Null type.`,
+    );
   }
   return type;
 }
-export function isInputType(type) {
+exports.assertNonNullType = assertNonNullType;
+function isInputType(type) {
   return (
     isScalarType(type) ||
     isEnumType(type) ||
@@ -119,13 +213,17 @@ export function isInputType(type) {
     (isWrappingType(type) && isInputType(type.ofType))
   );
 }
-export function assertInputType(type) {
+exports.isInputType = isInputType;
+function assertInputType(type) {
   if (!isInputType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL input type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL input type.`,
+    );
   }
   return type;
 }
-export function isOutputType(type) {
+exports.assertInputType = assertInputType;
+function isOutputType(type) {
   return (
     isScalarType(type) ||
     isObjectType(type) ||
@@ -135,41 +233,61 @@ export function isOutputType(type) {
     (isWrappingType(type) && isOutputType(type.ofType))
   );
 }
-export function assertOutputType(type) {
+exports.isOutputType = isOutputType;
+function assertOutputType(type) {
   if (!isOutputType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL output type.`);
-  }
-  return type;
-}
-export function isLeafType(type) {
-  return isScalarType(type) || isEnumType(type);
-}
-export function assertLeafType(type) {
-  if (!isLeafType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL leaf type.`);
-  }
-  return type;
-}
-export function isCompositeType(type) {
-  return isObjectType(type) || isInterfaceType(type) || isUnionType(type);
-}
-export function assertCompositeType(type) {
-  if (!isCompositeType(type)) {
     throw new Error(
-      `Expected ${inspect(type)} to be a GraphQL composite type.`,
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL output type.`,
     );
   }
   return type;
 }
-export function isAbstractType(type) {
-  return isInterfaceType(type) || isUnionType(type);
+exports.assertOutputType = assertOutputType;
+function isLeafType(type) {
+  return isScalarType(type) || isEnumType(type);
 }
-export function assertAbstractType(type) {
-  if (!isAbstractType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL abstract type.`);
+exports.isLeafType = isLeafType;
+function assertLeafType(type) {
+  if (!isLeafType(type)) {
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL leaf type.`,
+    );
   }
   return type;
 }
+exports.assertLeafType = assertLeafType;
+function isCompositeType(type) {
+  return isObjectType(type) || isInterfaceType(type) || isUnionType(type);
+}
+exports.isCompositeType = isCompositeType;
+function assertCompositeType(type) {
+  if (!isCompositeType(type)) {
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL composite type.`,
+    );
+  }
+  return type;
+}
+exports.assertCompositeType = assertCompositeType;
+function isAbstractType(type) {
+  return isInterfaceType(type) || isUnionType(type);
+}
+exports.isAbstractType = isAbstractType;
+function assertAbstractType(type) {
+  if (!isAbstractType(type)) {
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL abstract type.`,
+    );
+  }
+  return type;
+}
+exports.assertAbstractType = assertAbstractType;
 /**
  * List Type Wrapper
  *
@@ -189,10 +307,8 @@ export function assertAbstractType(type) {
  * })
  * ```
  */
-export class GraphQLList {
+class GraphQLList {
   constructor(ofType) {
-    isType(ofType) ||
-      devAssert(false, `Expected ${inspect(ofType)} to be a GraphQL type.`);
     this.ofType = ofType;
   }
   get [Symbol.toStringTag]() {
@@ -205,6 +321,7 @@ export class GraphQLList {
     return this.toString();
   }
 }
+exports.GraphQLList = GraphQLList;
 /**
  * Non-Null Type Wrapper
  *
@@ -226,13 +343,8 @@ export class GraphQLList {
  * ```
  * Note: the enforcement of non-nullability occurs within the executor.
  */
-export class GraphQLNonNull {
+class GraphQLNonNull {
   constructor(ofType) {
-    isNullableType(ofType) ||
-      devAssert(
-        false,
-        `Expected ${inspect(ofType)} to be a GraphQL nullable type.`,
-      );
     this.ofType = ofType;
   }
   get [Symbol.toStringTag]() {
@@ -245,30 +357,44 @@ export class GraphQLNonNull {
     return this.toString();
   }
 }
-export function isWrappingType(type) {
+exports.GraphQLNonNull = GraphQLNonNull;
+function isWrappingType(type) {
   return isListType(type) || isNonNullType(type);
 }
-export function assertWrappingType(type) {
+exports.isWrappingType = isWrappingType;
+function assertWrappingType(type) {
   if (!isWrappingType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL wrapping type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL wrapping type.`,
+    );
   }
   return type;
 }
-export function isNullableType(type) {
+exports.assertWrappingType = assertWrappingType;
+function isNullableType(type) {
   return isType(type) && !isNonNullType(type);
 }
-export function assertNullableType(type) {
+exports.isNullableType = isNullableType;
+function assertNullableType(type) {
   if (!isNullableType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL nullable type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(
+        type,
+      )} to be a GraphQL nullable type.`,
+    );
   }
   return type;
 }
-export function getNullableType(type) {
+exports.assertNullableType = assertNullableType;
+function getNullableType(type) {
   if (type) {
     return isNonNullType(type) ? type.ofType : type;
   }
 }
-export function isNamedType(type) {
+exports.getNullableType = getNullableType;
+function isNamedType(type) {
   return (
     isScalarType(type) ||
     isObjectType(type) ||
@@ -278,13 +404,17 @@ export function isNamedType(type) {
     isInputObjectType(type)
   );
 }
-export function assertNamedType(type) {
+exports.isNamedType = isNamedType;
+function assertNamedType(type) {
   if (!isNamedType(type)) {
-    throw new Error(`Expected ${inspect(type)} to be a GraphQL named type.`);
+    throw new Error(
+      `Expected ${(0, inspect_js_1.inspect)(type)} to be a GraphQL named type.`,
+    );
   }
   return type;
 }
-export function getNamedType(type) {
+exports.assertNamedType = assertNamedType;
+function getNamedType(type) {
   if (type) {
     let unwrappedType = type;
     while (isWrappingType(unwrappedType)) {
@@ -293,12 +423,15 @@ export function getNamedType(type) {
     return unwrappedType;
   }
 }
-export function resolveReadonlyArrayThunk(thunk) {
+exports.getNamedType = getNamedType;
+function resolveReadonlyArrayThunk(thunk) {
   return typeof thunk === 'function' ? thunk() : thunk;
 }
-export function resolveObjMapThunk(thunk) {
+exports.resolveReadonlyArrayThunk = resolveReadonlyArrayThunk;
+function resolveObjMapThunk(thunk) {
   return typeof thunk === 'function' ? thunk() : thunk;
 }
+exports.resolveObjMapThunk = resolveObjMapThunk;
 /**
  * Scalar Type Definition
  *
@@ -330,33 +463,23 @@ export function resolveObjMapThunk(thunk) {
  * });
  * ```
  */
-export class GraphQLScalarType {
+class GraphQLScalarType {
   constructor(config) {
-    const parseValue = config.parseValue ?? identityFunc;
-    this.name = assertName(config.name);
+    const parseValue = config.parseValue ?? identityFunc_js_1.identityFunc;
+    this.name = (0, assertName_js_1.assertName)(config.name);
     this.description = config.description;
     this.specifiedByURL = config.specifiedByURL;
-    this.serialize = config.serialize ?? identityFunc;
+    this.serialize = config.serialize ?? identityFunc_js_1.identityFunc;
     this.parseValue = parseValue;
     this.parseLiteral =
       config.parseLiteral ??
-      ((node, variables) => parseValue(valueFromASTUntyped(node, variables)));
-    this.extensions = toObjMap(config.extensions);
+      ((node, variables) =>
+        parseValue(
+          (0, valueFromASTUntyped_js_1.valueFromASTUntyped)(node, variables),
+        ));
+    this.extensions = (0, toObjMap_js_1.toObjMap)(config.extensions);
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes ?? [];
-    config.specifiedByURL == null ||
-      typeof config.specifiedByURL === 'string' ||
-      devAssert(
-        false,
-        `${this.name} must provide "specifiedByURL" as a string, ` +
-          `but got: ${inspect(config.specifiedByURL)}.`,
-      );
-    config.serialize == null ||
-      typeof config.serialize === 'function' ||
-      devAssert(
-        false,
-        `${this.name} must provide "serialize" function. If this custom Scalar is also used as an input type, ensure "parseValue" and "parseLiteral" functions are also provided.`,
-      );
     if (config.parseLiteral) {
       (typeof config.parseValue === 'function' &&
         typeof config.parseLiteral === 'function') ||
@@ -389,6 +512,7 @@ export class GraphQLScalarType {
     return this.toString();
   }
 }
+exports.GraphQLScalarType = GraphQLScalarType;
 /**
  * Object Type Definition
  *
@@ -429,23 +553,16 @@ export class GraphQLScalarType {
  * });
  * ```
  */
-export class GraphQLObjectType {
+class GraphQLObjectType {
   constructor(config) {
-    this.name = assertName(config.name);
+    this.name = (0, assertName_js_1.assertName)(config.name);
     this.description = config.description;
     this.isTypeOf = config.isTypeOf;
-    this.extensions = toObjMap(config.extensions);
+    this.extensions = (0, toObjMap_js_1.toObjMap)(config.extensions);
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes ?? [];
     this._fields = () => defineFieldMap(config);
     this._interfaces = () => defineInterfaces(config);
-    config.isTypeOf == null ||
-      typeof config.isTypeOf === 'function' ||
-      devAssert(
-        false,
-        `${this.name} must provide "isTypeOf" as a function, ` +
-          `but got: ${inspect(config.isTypeOf)}.`,
-      );
   }
   get [Symbol.toStringTag]() {
     return 'GraphQLObjectType';
@@ -481,70 +598,41 @@ export class GraphQLObjectType {
     return this.toString();
   }
 }
+exports.GraphQLObjectType = GraphQLObjectType;
 function defineInterfaces(config) {
-  const interfaces = resolveReadonlyArrayThunk(config.interfaces ?? []);
-  Array.isArray(interfaces) ||
-    devAssert(
-      false,
-      `${config.name} interfaces must be an Array or a function which returns an Array.`,
-    );
-  return interfaces;
+  return resolveReadonlyArrayThunk(config.interfaces ?? []);
 }
 function defineFieldMap(config) {
   const fieldMap = resolveObjMapThunk(config.fields);
-  isPlainObj(fieldMap) ||
-    devAssert(
-      false,
-      `${config.name} fields must be an object with field names as keys or a function which returns such an object.`,
-    );
-  return mapValue(fieldMap, (fieldConfig, fieldName) => {
-    isPlainObj(fieldConfig) ||
-      devAssert(
-        false,
-        `${config.name}.${fieldName} field config must be an object.`,
-      );
-    fieldConfig.resolve == null ||
-      typeof fieldConfig.resolve === 'function' ||
-      devAssert(
-        false,
-        `${config.name}.${fieldName} field resolver must be a function if ` +
-          `provided, but got: ${inspect(fieldConfig.resolve)}.`,
-      );
+  return (0, mapValue_js_1.mapValue)(fieldMap, (fieldConfig, fieldName) => {
     const argsConfig = fieldConfig.args ?? {};
-    isPlainObj(argsConfig) ||
-      devAssert(
-        false,
-        `${config.name}.${fieldName} args must be an object with argument names as keys.`,
-      );
     return {
-      name: assertName(fieldName),
+      name: (0, assertName_js_1.assertName)(fieldName),
       description: fieldConfig.description,
       type: fieldConfig.type,
       args: defineArguments(argsConfig),
       resolve: fieldConfig.resolve,
       subscribe: fieldConfig.subscribe,
       deprecationReason: fieldConfig.deprecationReason,
-      extensions: toObjMap(fieldConfig.extensions),
+      extensions: (0, toObjMap_js_1.toObjMap)(fieldConfig.extensions),
       astNode: fieldConfig.astNode,
     };
   });
 }
-export function defineArguments(config) {
+function defineArguments(config) {
   return Object.entries(config).map(([argName, argConfig]) => ({
-    name: assertName(argName),
+    name: (0, assertName_js_1.assertName)(argName),
     description: argConfig.description,
     type: argConfig.type,
     defaultValue: argConfig.defaultValue,
     deprecationReason: argConfig.deprecationReason,
-    extensions: toObjMap(argConfig.extensions),
+    extensions: (0, toObjMap_js_1.toObjMap)(argConfig.extensions),
     astNode: argConfig.astNode,
   }));
 }
-function isPlainObj(obj) {
-  return isObjectLike(obj) && !Array.isArray(obj);
-}
+exports.defineArguments = defineArguments;
 function fieldsToFieldsConfig(fields) {
-  return mapValue(fields, (field) => ({
+  return (0, mapValue_js_1.mapValue)(fields, (field) => ({
     description: field.description,
     type: field.type,
     args: argsToArgsConfig(field.args),
@@ -558,8 +646,8 @@ function fieldsToFieldsConfig(fields) {
 /**
  * @internal
  */
-export function argsToArgsConfig(args) {
-  return keyValMap(
+function argsToArgsConfig(args) {
+  return (0, keyValMap_js_1.keyValMap)(
     args,
     (arg) => arg.name,
     (arg) => ({
@@ -572,9 +660,11 @@ export function argsToArgsConfig(args) {
     }),
   );
 }
-export function isRequiredArgument(arg) {
+exports.argsToArgsConfig = argsToArgsConfig;
+function isRequiredArgument(arg) {
   return isNonNullType(arg.type) && arg.defaultValue === undefined;
 }
+exports.isRequiredArgument = isRequiredArgument;
 /**
  * Interface Type Definition
  *
@@ -594,23 +684,16 @@ export function isRequiredArgument(arg) {
  * });
  * ```
  */
-export class GraphQLInterfaceType {
+class GraphQLInterfaceType {
   constructor(config) {
-    this.name = assertName(config.name);
+    this.name = (0, assertName_js_1.assertName)(config.name);
     this.description = config.description;
     this.resolveType = config.resolveType;
-    this.extensions = toObjMap(config.extensions);
+    this.extensions = (0, toObjMap_js_1.toObjMap)(config.extensions);
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes ?? [];
     this._fields = defineFieldMap.bind(undefined, config);
     this._interfaces = defineInterfaces.bind(undefined, config);
-    config.resolveType == null ||
-      typeof config.resolveType === 'function' ||
-      devAssert(
-        false,
-        `${this.name} must provide "resolveType" as a function, ` +
-          `but got: ${inspect(config.resolveType)}.`,
-      );
   }
   get [Symbol.toStringTag]() {
     return 'GraphQLInterfaceType';
@@ -646,6 +729,7 @@ export class GraphQLInterfaceType {
     return this.toString();
   }
 }
+exports.GraphQLInterfaceType = GraphQLInterfaceType;
 /**
  * Union Type Definition
  *
@@ -670,22 +754,15 @@ export class GraphQLInterfaceType {
  * });
  * ```
  */
-export class GraphQLUnionType {
+class GraphQLUnionType {
   constructor(config) {
-    this.name = assertName(config.name);
+    this.name = (0, assertName_js_1.assertName)(config.name);
     this.description = config.description;
     this.resolveType = config.resolveType;
-    this.extensions = toObjMap(config.extensions);
+    this.extensions = (0, toObjMap_js_1.toObjMap)(config.extensions);
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes ?? [];
     this._types = defineTypes.bind(undefined, config);
-    config.resolveType == null ||
-      typeof config.resolveType === 'function' ||
-      devAssert(
-        false,
-        `${this.name} must provide "resolveType" as a function, ` +
-          `but got: ${inspect(config.resolveType)}.`,
-      );
   }
   get [Symbol.toStringTag]() {
     return 'GraphQLUnionType';
@@ -714,14 +791,9 @@ export class GraphQLUnionType {
     return this.toString();
   }
 }
+exports.GraphQLUnionType = GraphQLUnionType;
 function defineTypes(config) {
-  const types = resolveReadonlyArrayThunk(config.types);
-  Array.isArray(types) ||
-    devAssert(
-      false,
-      `Must provide Array of types or a function which returns such an array for Union ${config.name}.`,
-    );
-  return types;
+  return resolveReadonlyArrayThunk(config.types);
 }
 /**
  * Enum Type Definition
@@ -746,18 +818,30 @@ function defineTypes(config) {
  * Note: If a value is not provided in a definition, the name of the enum value
  * will be used as its internal value.
  */
-export class GraphQLEnumType /* <T> */ {
+class GraphQLEnumType /* <T> */ {
   constructor(config) {
-    this.name = assertName(config.name);
+    this.name = (0, assertName_js_1.assertName)(config.name);
     this.description = config.description;
-    this.extensions = toObjMap(config.extensions);
+    this.extensions = (0, toObjMap_js_1.toObjMap)(config.extensions);
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes ?? [];
-    this._values = defineEnumValues(this.name, config.values);
+    this._values = Object.entries(config.values).map(
+      ([valueName, valueConfig]) => ({
+        name: (0, assertName_js_1.assertEnumValueName)(valueName),
+        description: valueConfig.description,
+        value: valueConfig.value !== undefined ? valueConfig.value : valueName,
+        deprecationReason: valueConfig.deprecationReason,
+        extensions: (0, toObjMap_js_1.toObjMap)(valueConfig.extensions),
+        astNode: valueConfig.astNode,
+      }),
+    );
     this._valueLookup = new Map(
       this._values.map((enumValue) => [enumValue.value, enumValue]),
     );
-    this._nameLookup = keyMap(this._values, (value) => value.name);
+    this._nameLookup = (0, keyMap_js_1.keyMap)(
+      this._values,
+      (value) => value.name,
+    );
   }
   get [Symbol.toStringTag]() {
     return 'GraphQLEnumType';
@@ -771,23 +855,24 @@ export class GraphQLEnumType /* <T> */ {
   serialize(outputValue /* T */) {
     const enumValue = this._valueLookup.get(outputValue);
     if (enumValue === undefined) {
-      throw new GraphQLError(
-        `Enum "${this.name}" cannot represent value: ${inspect(outputValue)}`,
+      throw new GraphQLError_js_1.GraphQLError(
+        `Enum "${this.name}" cannot represent value: ${(0,
+        inspect_js_1.inspect)(outputValue)}`,
       );
     }
     return enumValue.name;
   }
   parseValue(inputValue) {
     if (typeof inputValue !== 'string') {
-      const valueStr = inspect(inputValue);
-      throw new GraphQLError(
+      const valueStr = (0, inspect_js_1.inspect)(inputValue);
+      throw new GraphQLError_js_1.GraphQLError(
         `Enum "${this.name}" cannot represent non-string value: ${valueStr}.` +
           didYouMeanEnumValue(this, valueStr),
       );
     }
     const enumValue = this.getValue(inputValue);
     if (enumValue == null) {
-      throw new GraphQLError(
+      throw new GraphQLError_js_1.GraphQLError(
         `Value "${inputValue}" does not exist in "${this.name}" enum.` +
           didYouMeanEnumValue(this, inputValue),
       );
@@ -796,9 +881,9 @@ export class GraphQLEnumType /* <T> */ {
   }
   parseLiteral(valueNode, _variables) {
     // Note: variables will be resolved to a value before calling this function.
-    if (valueNode.kind !== Kind.ENUM) {
-      const valueStr = print(valueNode);
-      throw new GraphQLError(
+    if (valueNode.kind !== kinds_js_1.Kind.ENUM) {
+      const valueStr = (0, printer_js_1.print)(valueNode);
+      throw new GraphQLError_js_1.GraphQLError(
         `Enum "${this.name}" cannot represent non-enum value: ${valueStr}.` +
           didYouMeanEnumValue(this, valueStr),
         { nodes: valueNode },
@@ -806,8 +891,8 @@ export class GraphQLEnumType /* <T> */ {
     }
     const enumValue = this.getValue(valueNode.value);
     if (enumValue == null) {
-      const valueStr = print(valueNode);
-      throw new GraphQLError(
+      const valueStr = (0, printer_js_1.print)(valueNode);
+      throw new GraphQLError_js_1.GraphQLError(
         `Value "${valueStr}" does not exist in "${this.name}" enum.` +
           didYouMeanEnumValue(this, valueStr),
         { nodes: valueNode },
@@ -816,7 +901,7 @@ export class GraphQLEnumType /* <T> */ {
     return enumValue.value;
   }
   toConfig() {
-    const values = keyValMap(
+    const values = (0, keyValMap_js_1.keyValMap)(
       this.getValues(),
       (value) => value.name,
       (value) => ({
@@ -843,33 +928,14 @@ export class GraphQLEnumType /* <T> */ {
     return this.toString();
   }
 }
+exports.GraphQLEnumType = GraphQLEnumType;
 function didYouMeanEnumValue(enumType, unknownValueStr) {
   const allNames = enumType.getValues().map((value) => value.name);
-  const suggestedValues = suggestionList(unknownValueStr, allNames);
-  return didYouMean('the enum value', suggestedValues);
-}
-function defineEnumValues(typeName, valueMap /* <T> */) {
-  isPlainObj(valueMap) ||
-    devAssert(
-      false,
-      `${typeName} values must be an object with value names as keys.`,
-    );
-  return Object.entries(valueMap).map(([valueName, valueConfig]) => {
-    isPlainObj(valueConfig) ||
-      devAssert(
-        false,
-        `${typeName}.${valueName} must refer to an object with a "value" key ` +
-          `representing an internal value but got: ${inspect(valueConfig)}.`,
-      );
-    return {
-      name: assertEnumValueName(valueName),
-      description: valueConfig.description,
-      value: valueConfig.value !== undefined ? valueConfig.value : valueName,
-      deprecationReason: valueConfig.deprecationReason,
-      extensions: toObjMap(valueConfig.extensions),
-      astNode: valueConfig.astNode,
-    };
-  });
+  const suggestedValues = (0, suggestionList_js_1.suggestionList)(
+    unknownValueStr,
+    allNames,
+  );
+  return (0, didYouMean_js_1.didYouMean)('the enum value', suggestedValues);
 }
 /**
  * Input Object Type Definition
@@ -892,11 +958,11 @@ function defineEnumValues(typeName, valueMap /* <T> */) {
  * });
  * ```
  */
-export class GraphQLInputObjectType {
+class GraphQLInputObjectType {
   constructor(config) {
-    this.name = assertName(config.name);
+    this.name = (0, assertName_js_1.assertName)(config.name);
     this.description = config.description;
-    this.extensions = toObjMap(config.extensions);
+    this.extensions = (0, toObjMap_js_1.toObjMap)(config.extensions);
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes ?? [];
     this._fields = defineInputFieldMap.bind(undefined, config);
@@ -911,7 +977,7 @@ export class GraphQLInputObjectType {
     return this._fields;
   }
   toConfig() {
-    const fields = mapValue(this.getFields(), (field) => ({
+    const fields = (0, mapValue_js_1.mapValue)(this.getFields(), (field) => ({
       description: field.description,
       type: field.type,
       defaultValue: field.defaultValue,
@@ -935,30 +1001,27 @@ export class GraphQLInputObjectType {
     return this.toString();
   }
 }
+exports.GraphQLInputObjectType = GraphQLInputObjectType;
 function defineInputFieldMap(config) {
   const fieldMap = resolveObjMapThunk(config.fields);
-  isPlainObj(fieldMap) ||
-    devAssert(
-      false,
-      `${config.name} fields must be an object with field names as keys or a function which returns such an object.`,
-    );
-  return mapValue(fieldMap, (fieldConfig, fieldName) => {
+  return (0, mapValue_js_1.mapValue)(fieldMap, (fieldConfig, fieldName) => {
     !('resolve' in fieldConfig) ||
       devAssert(
         false,
         `${config.name}.${fieldName} field has a resolve property, but Input Types cannot define resolvers.`,
       );
     return {
-      name: assertName(fieldName),
+      name: (0, assertName_js_1.assertName)(fieldName),
       description: fieldConfig.description,
       type: fieldConfig.type,
       defaultValue: fieldConfig.defaultValue,
       deprecationReason: fieldConfig.deprecationReason,
-      extensions: toObjMap(fieldConfig.extensions),
+      extensions: (0, toObjMap_js_1.toObjMap)(fieldConfig.extensions),
       astNode: fieldConfig.astNode,
     };
   });
 }
-export function isRequiredInputField(field) {
+function isRequiredInputField(field) {
   return isNonNullType(field.type) && field.defaultValue === undefined;
 }
+exports.isRequiredInputField = isRequiredInputField;

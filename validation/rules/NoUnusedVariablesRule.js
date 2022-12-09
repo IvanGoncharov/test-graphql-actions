@@ -1,4 +1,7 @@
-import { GraphQLError } from '../../error/GraphQLError.js';
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.NoUnusedVariablesRule = void 0;
+const GraphQLError_js_1 = require('../../error/GraphQLError.js');
 /**
  * No unused variables
  *
@@ -7,36 +10,30 @@ import { GraphQLError } from '../../error/GraphQLError.js';
  *
  * See https://spec.graphql.org/draft/#sec-All-Variables-Used
  */
-export function NoUnusedVariablesRule(context) {
-  let variableDefs = [];
+function NoUnusedVariablesRule(context) {
   return {
-    OperationDefinition: {
-      enter() {
-        variableDefs = [];
-      },
-      leave(operation) {
-        const variableNameUsed = Object.create(null);
-        const usages = context.getRecursiveVariableUsages(operation);
-        for (const { node } of usages) {
-          variableNameUsed[node.name.value] = true;
+    OperationDefinition(operation) {
+      const usages = context.getRecursiveVariableUsages(operation);
+      const variableNameUsed = new Set(
+        usages.map(({ node }) => node.name.value),
+      );
+      // FIXME: https://github.com/graphql/graphql-js/issues/2203
+      /* c8 ignore next */
+      const variableDefinitions = operation.variableDefinitions ?? [];
+      for (const variableDef of variableDefinitions) {
+        const variableName = variableDef.variable.name.value;
+        if (!variableNameUsed.has(variableName)) {
+          context.reportError(
+            new GraphQLError_js_1.GraphQLError(
+              operation.name
+                ? `Variable "$${variableName}" is never used in operation "${operation.name.value}".`
+                : `Variable "$${variableName}" is never used.`,
+              { nodes: variableDef },
+            ),
+          );
         }
-        for (const variableDef of variableDefs) {
-          const variableName = variableDef.variable.name.value;
-          if (variableNameUsed[variableName] !== true) {
-            context.reportError(
-              new GraphQLError(
-                operation.name
-                  ? `Variable "$${variableName}" is never used in operation "${operation.name.value}".`
-                  : `Variable "$${variableName}" is never used.`,
-                { nodes: variableDef },
-              ),
-            );
-          }
-        }
-      },
-    },
-    VariableDefinition(def) {
-      variableDefs.push(def);
+      }
     },
   };
 }
+exports.NoUnusedVariablesRule = NoUnusedVariablesRule;
