@@ -21,7 +21,7 @@ export interface GraphQLErrorExtensions {
   [attributeName: string]: unknown;
 }
 export interface GraphQLErrorOptions {
-  nodes?: ReadonlyArray<ASTNode> | ASTNode | null;
+  nodes?: ReadonlyArray<ASTNode> | ASTNode | null | undefined;
   source?: Maybe<Source>;
   positions?: Maybe<ReadonlyArray<number>>;
   path?: Maybe<ReadonlyArray<string | number>>;
@@ -144,7 +144,7 @@ export class GraphQLError extends Error {
   get [Symbol.toStringTag](): string {
     return 'GraphQLError';
   }
-  toString(): string {
+  override toString(): string {
     let output = this.message;
     if (this.nodes) {
       for (const node of this.nodes) {

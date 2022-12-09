@@ -36,7 +36,7 @@ export function SingleFieldSubscriptionsRule(
               fragments[definition.name.value] = definition;
             }
           }
-          const fields = collectFields(
+          const { fields } = collectFields(
             schema,
             fragments,
             variableValues,
@@ -57,8 +57,7 @@ export function SingleFieldSubscriptionsRule(
             );
           }
           for (const fieldNodes of fields.values()) {
-            const field = fieldNodes[0];
-            const fieldName = field.name.value;
+            const fieldName = fieldNodes[0].name.value;
             if (fieldName.startsWith('__')) {
               context.reportError(
                 new GraphQLError(

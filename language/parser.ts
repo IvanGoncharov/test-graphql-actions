@@ -18,6 +18,7 @@ import type {
   EnumTypeExtensionNode,
   EnumValueDefinitionNode,
   EnumValueNode,
+  ErrorBoundaryNode,
   FieldDefinitionNode,
   FieldNode,
   FloatValueNode,
@@ -30,11 +31,14 @@ import type {
   InterfaceTypeDefinitionNode,
   InterfaceTypeExtensionNode,
   IntValueNode,
+  ListNullabilityOperatorNode,
   ListTypeNode,
   ListValueNode,
   NamedTypeNode,
   NameNode,
+  NonNullAssertionNode,
   NonNullTypeNode,
+  NullabilityAssertionNode,
   NullValueNode,
   ObjectFieldNode,
   ObjectTypeDefinitionNode,
@@ -73,7 +77,15 @@ export interface ParseOptions {
    * in the source that they correspond to. This configuration flag
    * disables that behavior for performance or testing.
    */
-  noLocation?: boolean;
+  noLocation?: boolean | undefined;
+  /**
+   * Parser CPU and memory usage is linear to the number of tokens in a document
+   * however in extreme cases it becomes quadratic due to memory exhaustion.
+   * Parsing happens before validation so even invalid queries can burn lots of
+   * CPU time and memory.
+   * To prevent this you can set a maximum number of tokens allowed within a document.
+   */
+  maxTokens?: number | undefined;
   /**
    * @deprecated will be removed in the v17.0.0
    *
@@ -89,7 +101,29 @@ export interface ParseOptions {
    * }
    * ```
    */
-  allowLegacyFragmentVariables?: boolean;
+  allowLegacyFragmentVariables?: boolean | undefined;
+  /**
+   * EXPERIMENTAL:
+   *
+   * If enabled, the parser will understand and parse Client Controlled Nullability
+   * Designators contained in Fields. They'll be represented in the
+   * `nullabilityAssertion` field of the FieldNode.
+   *
+   * The syntax looks like the following:
+   *
+   * ```graphql
+   *   {
+   *     nullableField!
+   *     nonNullableField?
+   *     nonNullableSelectionSet? {
+   *       childField!
+   *     }
+   *   }
+   * ```
+   * Note: this feature is experimental and may change or be removed in the
+   * future.
+   */
+  experimentalClientControlledNullability?: boolean | undefined;
 }
 /**
  * Given a GraphQL source, parses it into a Document.
@@ -97,7 +131,7 @@ export interface ParseOptions {
  */
 export function parse(
   source: string | Source,
-  options?: ParseOptions,
+  options?: ParseOptions | undefined,
 ): DocumentNode {
   const parser = new Parser(source, options);
   return parser.parseDocument();
@@ -114,7 +148,7 @@ export function parse(
  */
 export function parseValue(
   source: string | Source,
-  options?: ParseOptions,
+  options?: ParseOptions | undefined,
 ): ValueNode {
   const parser = new Parser(source, options);
   parser.expectToken(TokenKind.SOF);
@@ -128,7 +162,7 @@ export function parseValue(
  */
 export function parseConstValue(
   source: string | Source,
-  options?: ParseOptions,
+  options?: ParseOptions | undefined,
 ): ConstValueNode {
   const parser = new Parser(source, options);
   parser.expectToken(TokenKind.SOF);
@@ -148,7 +182,7 @@ export function parseConstValue(
  */
 export function parseType(
   source: string | Source,
-  options?: ParseOptions,
+  options?: ParseOptions | undefined,
 ): TypeNode {
   const parser = new Parser(source, options);
   parser.expectToken(TokenKind.SOF);
@@ -168,12 +202,14 @@ export function parseType(
  * @internal
  */
 export class Parser {
-  protected _options: Maybe<ParseOptions>;
+  protected _options: ParseOptions;
   protected _lexer: Lexer;
-  constructor(source: string | Source, options?: ParseOptions) {
+  protected _tokenCounter: number;
+  constructor(source: string | Source, options: ParseOptions = {}) {
     const sourceObj = isSource(source) ? source : new Source(source);
     this._lexer = new Lexer(sourceObj);
     this._options = options;
+    this._tokenCounter = 0;
   }
   /**
    * Converts a name lex token into a name parse node.
@@ -399,11 +435,44 @@ export class Parser {
       alias,
       name,
       arguments: this.parseArguments(false),
+      // Experimental support for Client Controlled Nullability changes
+      // the grammar of Field:
+      nullabilityAssertion: this.parseNullabilityAssertion(),
       directives: this.parseDirectives(false),
       selectionSet: this.peek(TokenKind.BRACE_L)
         ? this.parseSelectionSet()
         : undefined,
     });
+  }
+  // TODO: add grammar comment after it finalizes
+  parseNullabilityAssertion(): NullabilityAssertionNode | undefined {
+    // Note: Client Controlled Nullability is experimental and may be changed or
+    // removed in the future.
+    if (this._options.experimentalClientControlledNullability !== true) {
+      return undefined;
+    }
+    const start = this._lexer.token;
+    let nullabilityAssertion;
+    if (this.expectOptionalToken(TokenKind.BRACKET_L)) {
+      const innerModifier = this.parseNullabilityAssertion();
+      this.expectToken(TokenKind.BRACKET_R);
+      nullabilityAssertion = this.node<ListNullabilityOperatorNode>(start, {
+        kind: Kind.LIST_NULLABILITY_OPERATOR,
+        nullabilityAssertion: innerModifier,
+      });
+    }
+    if (this.expectOptionalToken(TokenKind.BANG)) {
+      nullabilityAssertion = this.node<NonNullAssertionNode>(start, {
+        kind: Kind.NON_NULL_ASSERTION,
+        nullabilityAssertion,
+      });
+    } else if (this.expectOptionalToken(TokenKind.QUESTION_MARK)) {
+      nullabilityAssertion = this.node<ErrorBoundaryNode>(start, {
+        kind: Kind.ERROR_BOUNDARY,
+        nullabilityAssertion,
+      });
+    }
+    return nullabilityAssertion;
   }
   /**
    * Arguments[Const] : ( Argument[?Const]+ )
@@ -470,7 +539,7 @@ export class Parser {
     // Legacy support for defining variables within fragments changes
     // the grammar of FragmentDefinition:
     //   - fragment FragmentName VariableDefinitions? on TypeCondition Directives? SelectionSet
-    if (this._options?.allowLegacyFragmentVariables === true) {
+    if (this._options.allowLegacyFragmentVariables === true) {
       return this.node<FragmentDefinitionNode>(start, {
         kind: Kind.FRAGMENT_DEFINITION,
         name: this.parseFragmentName(),
@@ -526,13 +595,13 @@ export class Parser {
       case TokenKind.BRACE_L:
         return this.parseObject(isConst);
       case TokenKind.INT:
-        this._lexer.advance();
+        this.advanceLexer();
         return this.node<IntValueNode>(token, {
           kind: Kind.INT,
           value: token.value,
         });
       case TokenKind.FLOAT:
-        this._lexer.advance();
+        this.advanceLexer();
         return this.node<FloatValueNode>(token, {
           kind: Kind.FLOAT,
           value: token.value,
@@ -541,7 +610,7 @@ export class Parser {
       case TokenKind.BLOCK_STRING:
         return this.parseStringLiteral();
       case TokenKind.NAME:
-        this._lexer.advance();
+        this.advanceLexer();
         switch (token.value) {
           case 'true':
             return this.node<BooleanValueNode>(token, {
@@ -585,7 +654,7 @@ export class Parser {
   }
   parseStringLiteral(): StringValueNode {
     const token = this._lexer.token;
-    this._lexer.advance();
+    this.advanceLexer();
     return this.node<StringValueNode>(token, {
       kind: Kind.STRING,
       value: token.value,
@@ -1295,10 +1364,10 @@ export class Parser {
    */
   node<
     T extends {
-      loc?: Location;
+      loc?: Location | undefined;
     },
   >(startToken: Token, node: T): T {
-    if (this._options?.noLocation !== true) {
+    if (this._options.noLocation !== true) {
       node.loc = new Location(
         startToken,
         this._lexer.lastToken,
@@ -1320,7 +1389,7 @@ export class Parser {
   expectToken(kind: TokenKind): Token {
     const token = this._lexer.token;
     if (token.kind === kind) {
-      this._lexer.advance();
+      this.advanceLexer();
       return token;
     }
     throw syntaxError(
@@ -1336,7 +1405,7 @@ export class Parser {
   expectOptionalToken(kind: TokenKind): boolean {
     const token = this._lexer.token;
     if (token.kind === kind) {
-      this._lexer.advance();
+      this.advanceLexer();
       return true;
     }
     return false;
@@ -1348,7 +1417,7 @@ export class Parser {
   expectKeyword(value: string): void {
     const token = this._lexer.token;
     if (token.kind === TokenKind.NAME && token.value === value) {
-      this._lexer.advance();
+      this.advanceLexer();
     } else {
       throw syntaxError(
         this._lexer.source,
@@ -1364,7 +1433,7 @@ export class Parser {
   expectOptionalKeyword(value: string): boolean {
     const token = this._lexer.token;
     if (token.kind === TokenKind.NAME && token.value === value) {
-      this._lexer.advance();
+      this.advanceLexer();
       return true;
     }
     return false;
@@ -1446,6 +1515,20 @@ export class Parser {
       nodes.push(parseFn.call(this));
     } while (this.expectOptionalToken(delimiterKind));
     return nodes;
+  }
+  advanceLexer(): void {
+    const { maxTokens } = this._options;
+    const token = this._lexer.advance();
+    if (maxTokens !== undefined && token.kind !== TokenKind.EOF) {
+      ++this._tokenCounter;
+      if (this._tokenCounter > maxTokens) {
+        throw syntaxError(
+          this._lexer.source,
+          token.start,
+          `Document contains more than ${maxTokens} tokens. Parsing aborted.`,
+        );
+      }
+    }
   }
 }
 /**
